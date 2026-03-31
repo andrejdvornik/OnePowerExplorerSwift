@@ -1,0 +1,12 @@
+*~
+*.save
+*.save.[0-9]
+*.pyc
+._*
+*DS_Store*
+*__pycache__*
+.ipynb_checkpoints
+.venv/
+/Resources/app_packages
+/Frameworks
+
