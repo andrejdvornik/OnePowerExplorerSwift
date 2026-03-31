@@ -1,6 +1,6 @@
 # OnePower Explorer — Native macOS App
 
-A native macOS SwiftUI port of the OnePower Streamlit Explorer,
+A native macOS SwiftUI port of the OnePower Explorer streamlit app,
 using **PythonKit** to call the `onepower` and `pk_to_real` Python packages
 directly from Swift.
 
@@ -10,49 +10,7 @@ directly from Swift.
 
 | Tool | Version |
 |---|---|
-| macOS | 14 Sonoma or later |
-| Xcode | 15 or later |
-| Python | 3.10 – 3.12 (system or Homebrew) |
-| onepower | latest (`pip install onepower`) |
-
----
-
-## Setup
-
-### 1. Install the Python dependencies
-
-```bash
-pip install onepower numpy
-# pk_to_real is part of the onepower package — verify:
-python -c "from pk_to_real import PkTransformer; print('OK')"
-```
-
-### 2. Tell PythonKit which Python to use
-
-PythonKit reads the environment variable `PYTHON_LIBRARY` to find the
-shared Python library (`.dylib`).  Set it before launching the app.
-
-**Homebrew Python 3.12 example:**
-```bash
-export PYTHON_LIBRARY=$(python3-config --prefix)/lib/libpython3.12.dylib
-```
-
-Or hard-code it in the Xcode scheme's **Run → Environment Variables**:
-```
-PYTHON_LIBRARY = /opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12/lib/libpython3.12.dylib
-```
-
-### 3. Open in Xcode
-
-```bash
-open OnePowerExplorer.xcodeproj
-```
-
-Xcode will automatically resolve the **PythonKit** Swift Package.
-
-### 4. Build & Run
-
-Select the **OnePowerExplorer** scheme → `⌘R`.
+| macOS | 15 Sequoia or later |
 
 ---
 
@@ -64,9 +22,8 @@ OnePowerExplorer/
 ├── Models/
 │   ├── AppParameters.swift          # All user-controllable parameters + enums
 │   └── ComputedOutput.swift         # Result types + error types
-├── Python/
-│   └── PythonBridge.swift           # PythonKit wrapper (runs on background queue)
 ├── ViewModels/
+│   ├── PythonBridge.swift           # PythonKit wrapper (runs on background queue)
 │   └── ExplorerViewModel.swift      # @MainActor state coordinator
 └── Views/
     ├── ContentView.swift            # NavigationSplitView root
@@ -126,32 +83,11 @@ OnePowerExplorer/
 
 ## Known limitations & tips
 
-* **Log axes** — Swift Charts (macOS 14) does not support true logarithmic
+* **Log axes** — Swift Charts (macOS 15) does not support true logarithmic
   axes.  The app pre-transforms data with `log10()` and labels the ticks as
   `10^N`.  This is visually identical but the grid lines are evenly spaced in
   log space.
 
-* **Python sandbox** — The app disables the macOS sandbox in the entitlements
-  file so that PythonKit can load arbitrary `.dylib` files and packages.
-  Do not re-enable the sandbox without also embedding Python.framework.
-
-* **Slow first run** — The Python interpreter is initialised lazily on a
-  background thread the first time you press **Run Model**.  Subsequent runs
-  reuse the same interpreter and are much faster.
-
 * **Thread safety** — All Python calls are confined to the `PythonBridge`
   serial queue; results are delivered to `@MainActor` via `Task { @MainActor }`.
 
----
-
-## Customising Python path at runtime
-
-If you want to let users pick their Python installation, you can add a
-`PreferencesView` that writes `PYTHON_LIBRARY` to `UserDefaults` and then
-calls `Py_SetProgramName` before `PythonBridge.setup()`.
-
----
-
-## License
-
-Same as the OnePower package — see https://github.com/KiDS-WL/onepower.
