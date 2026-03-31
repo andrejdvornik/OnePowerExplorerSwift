@@ -288,7 +288,7 @@ struct CSVExportButton: View {
             // Show error alert
             return
         }
-        /*
+        #if os(macOS)
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "\(subtype).csv"
         panel.allowedContentTypes = [.commaSeparatedText]
@@ -299,7 +299,7 @@ struct CSVExportButton: View {
                 // Show error alert
             }
         }
-        */
+        #endif
     }
 }
 
