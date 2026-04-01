@@ -1,6 +1,6 @@
 import Foundation
 import PythonKit
-import Python
+//import Python
 
 // Boxed wrappers for non-Sendable values we need to pass into background closures
 private final class CompletionBox {
@@ -84,19 +84,17 @@ final class PythonBridge {
                 .path
             let appPackages = Bundle.main.path(forResource: "app_packages", ofType: nil)
             setenv("PYTHONHOME", pythonHome, 1)
-            setenv("PYTHONPATH", [pythonPath, libDynloadPath, appPackages].compactMap { $0 }.joined(separator: ":"), 1)
-            Py_Initialize()
+            setenv("PYTHONPATH", [pythonPath, libDynloadPath, appPackages, Bundle.main.resourcePath!].compactMap { $0 }.joined(separator: ":"), 1)
+            //Py_Initialize()
             
             let sys = try Python.attemptImport("sys")
-            let path = Bundle.main.resourcePath!
             let np  = try Python.attemptImport("numpy")
             let onepowerMod   = try Python.attemptImport("onepower")
-            sys.path.append(path)
             let pkToRealMod   = try Python.attemptImport("pk_to_real")
 
             self.np          = np
-            self.Spectra     = onepowerMod.Spectra
-            self.PkTransformer = pkToRealMod.PkTransformer
+            self.Spectra     = onepowerMod
+            self.PkTransformer = pkToRealMod
             self.isInitialised = true
 
             _ = sys  // suppress unused warning
@@ -158,7 +156,7 @@ final class PythonBridge {
         )
 
         // --- Instantiate model ---
-        let model = SpectraClass()
+        let model = SpectraClass.Spectra()
 
         // --- HOD params dict ---
         let hodParamsDict = makeHODParamsDict(p)
@@ -374,7 +372,7 @@ final class PythonBridge {
             (sepMin, sepMax) = (thetamin, thetamax)
         }
 
-        let transformer = PkTransformerClass(
+        let transformer = PkTransformerClass.PkTransformer(
             subtype,
             model,
             sep_min_in: sepMin,

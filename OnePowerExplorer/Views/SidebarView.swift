@@ -150,8 +150,8 @@ struct CosmoParamsView: View {
             LabeledSliderField("σ₈", value: $params.sigma_8, step: 0.01, range: 0.0...2.0)
             LabeledSliderField("Redshift z", value: $params.z_vec, step: 0.1, range: 0.0...2.0)
             LabeledSliderField("Σ m_ν [eV]", value: $params.m_nu, step: 0.01, range: 0.0...0.1)
-            LabeledSliderField("w₀", value: $params.w0, step: 0.05, range: -2.0...0.0)
-            LabeledSliderField("w_a", value: $params.wa, step: 0.05, range: -2.0...2.0)
+            LabeledSliderField("w₀", value: $params.w0, step: 0.05, range: -1.5...(-0.5))
+            LabeledSliderField("w_a", value: $params.wa, step: 0.05, range: -1.0...0.5)
             LabeledSliderField("T_CMB [K]", value: $params.tcmb, step: 0.01, range: 2.0...5.0)
         }
         .padding()
