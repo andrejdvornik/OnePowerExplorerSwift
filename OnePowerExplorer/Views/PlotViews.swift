@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import LaTeXSwiftUI
 
 // SingleObservableView
 
@@ -88,8 +89,26 @@ struct CombinedPkView: View {
                     }
                 }
                 .frame(height: 550)
-                .chartXAxisLabel("log₁₀ k  [h Mpc⁻¹]")
-                .chartYAxisLabel("log₁₀ P(k)  [(Mpc/h)³]")
+                .chartXAxisLabel(position: .bottom, alignment: .center)  { LaTeX("$k \\, [h \\, \\text{Mpc}^{-1}]$").font(.body).foregroundColor(.primary).fixedSize() }
+                .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX("$P(k) \\; [(Mpc/h)^3]$").font(.body).foregroundColor(.primary).fixedSize().rotationEffect(.degrees(-180)) }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 6)) { val in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                        AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                        if let d = val.as(Double.self) {
+                            AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(values: .automatic(desiredCount: 6)) { val in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                        AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                        if let d = val.as(Double.self) {
+                            AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
+                        }
+                    }
+                }
                 .chartLegend(position: .topTrailing)
                 
                 if vm.uiState.compareReference, let ref = vm.referenceModel {
@@ -171,23 +190,23 @@ struct LogLogChartView: View {
             }
         }
         .frame(height: 550)
-        .chartXAxisLabel(obs.xLabel)
-        .chartYAxisLabel(useLogY ? "log₁₀  \(obs.yLabel)" : obs.yLabel)
+        .chartXAxisLabel(position: .bottom, alignment: .center) { LaTeX(obs.xLabel).font(.body).foregroundColor(.primary).fixedSize() }
+        .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX(obs.yLabel).font(.body).foregroundColor(.primary).fixedSize().rotationEffect(.degrees(-180)) }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 6)) { val in
-                AxisGridLine()
-                AxisTick()
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                 if let d = val.as(Double.self) {
-                    AxisValueLabel(useLogX ? "10^\(Int(d))" : "\(d)")
+                    AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
                 }
             }
         }
         .chartYAxis {
             AxisMarks(values: .automatic(desiredCount: 6)) { val in
-                AxisGridLine()
-                AxisTick()
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                 if let d = val.as(Double.self) {
-                    AxisValueLabel(useLogY ? "10^\(Int(d))" : "\(d)")
+                    AxisValueLabel { useLogY ? LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() : LaTeX("$\(d)$").font(.caption).foregroundColor(.primary).fixedSize() }
                 }
             }
         }
@@ -219,6 +238,8 @@ struct RatioPanelView: View {
     let obs: ObservableOutput
     let liveOutput: ComputedOutput
     let referenceOutput: ComputedOutput
+    private var useLogX: Bool { obs.logX }
+    private var useLogY: Bool { obs.logY }
 
     private var ratioPoints: [ChartPoint] {
         let xRef = referenceOutput.x
@@ -242,7 +263,7 @@ struct RatioPanelView: View {
 
             Chart {
                 RuleMark(y: .value("zero", 0))
-                    .foregroundStyle(.gray.opacity(0.5))
+                    .foregroundStyle(.red.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1))
 
                 let pts = ratioPoints
@@ -252,8 +273,26 @@ struct RatioPanelView: View {
                 }
             }
             .frame(height: 150)
-            .chartXAxisLabel(obs.logX ? "log₁₀  \(obs.xLabel)" : obs.xLabel)
-            .chartYAxisLabel("(Live − Ref) / Ref  [%]")
+            .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX("$(\\text{Live} − \\text{Ref}) / \\text{Ref}  [%]$").font(.body).foregroundColor(.primary).fixedSize().rotationEffect(.degrees(-180)) }
+            .chartXAxisLabel(position: .bottom, alignment: .center) { LaTeX(obs.xLabel).font(.body).foregroundColor(.primary).fixedSize() }
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 6)) { val in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                    AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                    if let d = val.as(Double.self) {
+                        AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(values: [-100, 0, 100]) { val in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                    AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
+                    if let d = val.as(Double.self) {
+                        AxisValueLabel { LaTeX("$\(d)$").font(.caption).foregroundColor(.primary).fixedSize() }
+                    }
+                }
+            }
         }
     }
 

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		771DD53A2F7E5D9D00A8D668 /* LaTeXSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 771DD5392F7E5D9D00A8D668 /* LaTeXSwiftUI */; };
 		77E499E02F7BDFD700693F62 /* app_packages in Resources */ = {isa = PBXBuildFile; fileRef = 77E499DF2F7BDFD700693F62 /* app_packages */; };
 		77E499E22F7BE07500693F62 /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; };
 		77E499E32F7BE07500693F62 /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -64,6 +65,7 @@
 			files = (
 				77F1673F2F754AB8005B3BD3 /* PythonKit in Frameworks */,
 				77E499E22F7BE07500693F62 /* Python.xcframework in Frameworks */,
+				771DD53A2F7E5D9D00A8D668 /* LaTeXSwiftUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -167,6 +169,7 @@
 			name = OnePowerExplorer;
 			packageProductDependencies = (
 				AA800001 /* PythonKit */,
+				771DD5392F7E5D9D00A8D668 /* LaTeXSwiftUI */,
 			);
 			productName = OnePowerExplorer;
 			productReference = AA200001 /* OnePowerExplorer.app */;
@@ -198,6 +201,7 @@
 			mainGroup = AA400001;
 			packageReferences = (
 				AA800002 /* XCRemoteSwiftPackageReference "PythonKit" */,
+				771DD5382F7E5D9D00A8D668 /* XCRemoteSwiftPackageReference "LaTeXSwiftUI" */,
 			);
 			productRefGroup = AA400010 /* Products */;
 			projectDirPath = "";
@@ -501,6 +505,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		771DD5382F7E5D9D00A8D668 /* XCRemoteSwiftPackageReference "LaTeXSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/colinc86/LaTeXSwiftUI";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		AA800002 /* XCRemoteSwiftPackageReference "PythonKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pvieito/PythonKit.git";
@@ -512,6 +524,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		771DD5392F7E5D9D00A8D668 /* LaTeXSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 771DD5382F7E5D9D00A8D668 /* XCRemoteSwiftPackageReference "LaTeXSwiftUI" */;
+			productName = LaTeXSwiftUI;
+		};
 		775497802F7A926F007ACA34 /* PythonKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = AA800002 /* XCRemoteSwiftPackageReference "PythonKit" */;

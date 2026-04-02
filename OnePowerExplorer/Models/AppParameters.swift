@@ -66,25 +66,25 @@ enum HODModel: String, CaseIterable, Identifiable {
 enum ObservableOutput: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
-    case pmm = "Matter Power Spectrum Pₘₘ(k)"
-    case pgm = "Galaxy-matter Power Spectrum P_gm(k)"
-    case pgg = "Galaxy-galaxy Power Spectrum P_gg(k)"
-    case pii = "Intrinsic-intrinsic P_II(k)"
-    case pgi = "Galaxy-Intrinsic P_gI(k)"
-    case pmi = "Matter-Intrinsic P_mI(k)"
-    case gb  = "Galaxy Bias b_g(k)"
+    case pmm = "Matter Power Spectrum $P_{\\text{mm}}(k)$"
+    case pgm = "Galaxy-matter Power Spectrum $P_{\\text{gm}}(k)$"
+    case pgg = "Galaxy-galaxy Power Spectrum $P_{\\text{gg}}(k)$"
+    case pii = "Intrinsic-intrinsic Power Spectrum $P_{\\text{II}}(k)$"
+    case pgi = "Galaxy-Intrinsic Power Spectrum $P_{\\text{gI}}(k)$"
+    case pmi = "Matter-Intrinsic Power Spectrum $P_{\\text{mI}}(k)$"
+    case gb  = "Galaxy Bias $b_{\\text{g}}(k)$"
     case hmf = "Halo Mass Function"
     case biasFn = "Halo Bias Function"
     case concMatter = "Concentration (matter)"
     case concGal    = "Concentration (galaxies)"
     case smf = "Stellar Mass Function"
     case hod = "HOD"
-    case ds      = "ΔΣ(rₚ)"
-    case wp      = "wₚ(rₚ)"
-    case wtheta  = "w(θ)"
-    case gamma   = "γₜ(θ)"
-    case xip     = "ξ₊(θ)"
-    case xim     = "ξ₋(θ)"
+    case ds      = "$\\Delta \\Sigma(r_p)$"
+    case wp      = "$w_p(r_p)$"
+    case wtheta  = "$w(\\theta)$"
+    case gamma   = "$\\gamma_t(\\theta)$"
+    case xip     = "$\\xi_{+}(\\theta)$"
+    case xim     = "$\\xi_{-}(\\theta)$"
 
     var pythonSubtype: String {
         switch self {
@@ -121,48 +121,48 @@ enum ObservableOutput: String, CaseIterable, Identifiable {
     var xLabel: String {
         switch self {
         case .pmm, .pgm, .pgg, .pii, .pgi, .pmi, .gb:
-            return "k  [h Mpc⁻¹]"
+            return "$k \\, [h \\, \\text{Mpc}^{-1}]$"
         case .hmf, .biasFn, .concMatter, .concGal:
-            return "Mₕ  [h⁻¹ M☉]"
+            return "$M_h \\, [h^{-1} \\, M_\\odot]$"
         case .hod, .smf:
-            return "M*  [h⁻² M☉]"
+            return "$M^{*} \\, [h^{-2} \\, M_\\odot]$"
         case .ds, .wp:
-            return "rₚ  [h⁻¹ Mpc]"
+            return "$r_p \\, [h^{-1} \\, \\text{Mpc}]$"
         case .wtheta, .gamma, .xip, .xim:
-            return "θ  [arcmin]"
+            return "$\\theta \\, [\\text{arcmin}]$"
         }
     }
 
     var yLabel: String {
         switch self {
         case .pmm, .pgm, .pgg, .pii, .pgi:
-            return "P(k)  [(Mpc/h)³]"
+            return "$P(k) \\; [(Mpc/h)^3]$"
         case .pmi:
-            return "|P(k)|  [(Mpc/h)³]"
+            return "$|P(k)| \\; [(Mpc/h)^3]$"
         case .gb:
-            return "b_g(k)"
+            return "$b_g(k)$"
         case .hmf:
-            return "dn / dM"
+            return "$\\frac{dn}{dM}$"
         case .biasFn:
-            return "bₕ(M)"
+            return "$b_h(M)$"
         case .concMatter, .concGal:
-            return "c(M)"
+            return "$c(M)$"
         case .smf:
-            return "Φ  [h³ dex⁻¹ Mpc⁻³]"
+            return "$\\Phi \\, [h^3 \\, \\text{dex}^{-1} \\text{Mpc}^{-3}]$"
         case .hod:
-            return "<N|M>"
+            return "$<N|M>$"
         case .ds:
-            return "ΔΣ  [h M☉/pc²]"
+            return "$\\Delta \\Sigma \\, [h \\, M_\\odot/\\text{pc}^2]$"
         case .wp:
-            return "wₚ(rₚ)  [h⁻¹ Mpc]"
+            return "$w_p(r_p) \\, [h^{-1} \\; \\text{Mpc}]$"
         case .wtheta:
-            return "w(θ)"
+            return "$w(\\theta)$"
         case .gamma:
-            return "γₜ(θ)"
+            return "$\\gamma_t(\\theta)$"
         case .xip:
-            return "ξ₊(θ)"
+            return "$\\xi_{+}(\\theta)$"
         case .xim:
-            return "ξ₋(θ)"
+            return "$\\xi_{-}(\\theta)$"
         }
     }
 

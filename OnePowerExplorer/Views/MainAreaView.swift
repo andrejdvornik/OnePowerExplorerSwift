@@ -1,4 +1,5 @@
 import SwiftUI
+import LaTeXSwiftUI
 
 struct MainAreaView: View {
     @ObservedObject var vm: ExplorerViewModel
@@ -106,7 +107,7 @@ struct MainAreaView: View {
         return TabView(selection: $selectedTab) {
             ForEach(tabs, id: \.tag) { tab in
                 tab.view
-                .tabItem { Text(tab.title) }
+                .tabItem { LaTeX(tab.title).imageRenderingMode(.template).foregroundColor(.secondary).fixedSize() }
                 .tag(tab.tag)
             }
         }

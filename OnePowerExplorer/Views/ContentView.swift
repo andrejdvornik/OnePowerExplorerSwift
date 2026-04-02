@@ -9,7 +9,7 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
             SidebarView(params: vm.params, uiState: vm.uiState, vm: vm)
-                .navigationSplitViewColumnWidth(min: 280, ideal: 350, max: 450)
+                .navigationSplitViewColumnWidth(min: 280, ideal: 300, max: 450)
         } detail: {
             MainAreaView(vm: vm)
         }
