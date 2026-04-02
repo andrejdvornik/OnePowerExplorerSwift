@@ -7,6 +7,7 @@ enum ComputeState: Equatable {
     case idle
     case computing(message: String)
     case done
+    case unstable(String)
     case failed(String)
 }
 
@@ -21,13 +22,14 @@ final class ExplorerViewModel: ObservableObject {
     @Published var computeState: ComputeState = .idle
     @Published var computedOutputs: [String: ComputedOutput] = [:]
 
-    @Published var referenceModel: SavedModel?
+    @Published var referenceModel: SavedModel? = nil
     
     private var cancellables = Set<AnyCancellable>()
     private var debounceTimer: AnyCancellable?
     
     private var currentTask: Task<Void, Never>?
     private var hasRunInitialModel = false
+    private var requestID = UUID()
 
     init() {
         uiState.objectWillChange
@@ -40,10 +42,6 @@ final class ExplorerViewModel: ObservableObject {
                 self?.runModel()
         }
         .store(in: &cancellables)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.runInitialModelIfNeeded()
-        }
     }
     
     
@@ -67,6 +65,7 @@ final class ExplorerViewModel: ObservableObject {
     ]
 
     // Run model
+    @MainActor
     func runInitialModelIfNeeded() {
         guard !hasRunInitialModel else { return }
         hasRunInitialModel = true
@@ -74,44 +73,37 @@ final class ExplorerViewModel: ObservableObject {
     }
     
     func runModel() {
-        // Cancel the previous task if it's running
         currentTask?.cancel()
 
-        // Skip if no outputs are selected
-        //guard !params.selectedOutputs.isEmpty else { return }
-
-        // Set loading state
         let msg = Self.loadingMessages.randomElement()!
         computeState = .computing(message: msg)
 
-        // Start a new task
+        let snapParams = params.copy()
+
         currentTask = Task { @MainActor [weak self] in
             guard let self = self else { return }
 
-            let snapParams = params.copy()
             await self.computeWithPython(params: snapParams)
         }
     }
 
     private func computeWithPython(params: AppParameters) async {
-        // Use a continuation to bridge async/await with the completion handler
-        await withCheckedContinuation { continuation in
-            PythonBridge.shared.compute(
-                params: params,
+        do {
+            let snapParams = params.copy()
+            let outputs = try await PythonBridge.shared.compute(
+                params: snapParams,
                 components: true
-            ) { [weak self] result in
-                Task { @MainActor [weak self] in
-                    guard let self = self else { return }
-                    switch result {
-                    case .success(let outputs):
-                        self.computedOutputs = outputs
-                        self.computeState = .done
-                    case .failure(let error):
-                        self.computeState = .failed(error.localizedDescription)
-                    }
-                    continuation.resume()
-                }
-            }
+            )
+
+            self.computedOutputs = outputs
+            self.computeState = .done
+
+        } catch is CancellationError {
+        } catch ComputeError.numericalInstability {
+            // Handle numerical instability as a warning/unstable state
+            self.computeState = .unstable("Numerical instability detected. Try adjusting parameters.")
+        } catch {
+            self.computeState = .failed(error.localizedDescription)
         }
     }
 

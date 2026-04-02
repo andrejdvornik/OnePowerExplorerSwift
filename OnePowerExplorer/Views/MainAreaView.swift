@@ -15,7 +15,7 @@ struct MainAreaView: View {
                 } else {
                     idleView
                 }
-
+                
             case .computing:
                 //computingView(message: msg)
                 if vm.uiState.selectedOutputs.isEmpty {
@@ -23,11 +23,11 @@ struct MainAreaView: View {
                 } else {
                     outputTabsView
                 }
-
+                
             case .failed(let msg):
                 errorView(message: msg)
-
-            case .done:
+                
+            default:
                 if vm.uiState.selectedOutputs.isEmpty {
                     emptySelectionView
                 } else {
@@ -126,14 +126,23 @@ struct ModelManagementToolbar: View {
     @ObservedObject var vm: ExplorerViewModel
     @State private var exportSubtype: String?
     @State private var showExportPanel = false
+    var onReferenceSet: (() -> Void)?
+    var onReferenceCleared: (() -> Void)?
 
     var body: some View {
         HStack {
-            Button("Set as reference") { vm.setReferenceModel() }
-                .disabled(vm.computedOutputs.isEmpty)
+            Button("Set as reference") {
+                vm.setReferenceModel()
+                onReferenceSet?()
+            }
+            .disabled(vm.computedOutputs.isEmpty)
+            
             Divider().padding(.vertical, 8)
-            Button("Clear reference") { vm.clearReferenceModel() }
-                .disabled(vm.referenceModel == nil)
+            Button("Clear reference") {
+                vm.clearReferenceModel()
+                onReferenceCleared?()
+            }
+            .disabled(vm.referenceModel == nil)
         }
         //.padding(.horizontal, 12)
         .frame(alignment: .leading)
@@ -144,9 +153,10 @@ struct StatusToolbar: View {
     @ObservedObject var vm: ExplorerViewModel
     @State private var exportSubtype: String?
     @State private var showExportPanel = false
+    @Binding var showReferenceSet: Bool
+    @Binding var showReferenceCleared: Bool
 
     var body: some View {
-        // Status label for computing message
         HStack(spacing: 4) {
             if case .computing(let msg) = vm.computeState {
                 ProgressView()
@@ -160,18 +170,27 @@ struct StatusToolbar: View {
                 Text(msg)
                     .font(.caption)
                     .foregroundColor(.orange)
-            } else if case .done = vm.computeState {
-                Text("Ready")
+            } else if case .unstable(let msg) = vm.computeState {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.orange)
+                Text(msg)
                     .font(.caption)
-            } else if vm.referenceModel != nil {
-                //Label("Reference set", systemImage: "checkmark.circle.fill")
-                //    .font(.caption)
-                //    .foregroundStyle(.green)
+                    .foregroundColor(.orange)
+            } else if showReferenceSet {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.green)
                 Text("Reference set")
                     .font(.caption)
                     .foregroundColor(.green)
+            } else if showReferenceCleared {
+                Image(systemName: "trash")
+                    .foregroundColor(.red)
+                Text("Reference cleared")
+                    .font(.caption)
+                    .foregroundColor(.red)
+            } else if case .done = vm.computeState {
+                Text("Ready")
+                    .font(.caption)
             }
         }
         .padding(.horizontal, 12)

@@ -1,19 +1,6 @@
 import Foundation
 import PythonKit
-//import Python
-
-// Boxed wrappers for non-Sendable values we need to pass into background closures
-private final class CompletionBox {
-    let completion: (Result<[String: ComputedOutput], Error>) -> Void
-    init(_ completion: @escaping (Result<[String: ComputedOutput], Error>) -> Void) { self.completion = completion }
-}
-extension CompletionBox: @unchecked Sendable {}
-
-private final class ParamsBox {
-    let params: AppParameters
-    init(_ params: AppParameters) { self.params = params }
-}
-extension ParamsBox: @unchecked Sendable {}
+import Python
 
 // PythonBridge
 
@@ -22,11 +9,10 @@ extension ParamsBox: @unchecked Sendable {}
 ///
 /// All Python calls are performed synchronously on a dedicated
 /// serial background queue so the UI is never blocked.
-final class PythonBridge {
+actor PythonBridge {
 
     static let shared = PythonBridge()
-    
-    private let pythonQueue = DispatchQueue(label: "com.onepower.python", qos: .userInitiated)
+    private let pythonQueue = DispatchQueue(label: "pythonQueue")
 
     // Python module references (lazily initialised once)
     private var Spectra: PythonObject?
@@ -40,103 +26,87 @@ final class PythonBridge {
     private var workItem: (() -> Void)?
     
     private var pythonReadyHandler: (() -> Void)?
+    
+    private var transformerCache: [String: PythonObject] = [:]
 
     private init() {}
 
     // Initialise Python environment
 
     /// Call once from the main thread at app launch.
-    func setup(completion: (() -> Void)? = nil) {
-        pythonReadyHandler = completion
-        pythonQueue.async { [weak self] in
-            self?.initialisePython()
-            DispatchQueue.main.async {
-                self?.pythonReadyHandler?()
-            }
+    func setup() async {
+        if !isInitialised {
+            initialisePython()
         }
     }
 
     private func initialisePython() {
         guard !isInitialised else { return }
-        do {
-            guard let appBundleURL = Bundle.main.bundleURL.appendingPathComponent("Contents/Frameworks") as NSURL? else {
-                fatalError("Could not locate Frameworks folder in the app bundle.")
-            }
-            let frameworkBundleURL = appBundleURL.appendingPathComponent("Python.framework")
 
-            let pythonHome = frameworkBundleURL?
-                .appendingPathComponent("Versions")
-                .appendingPathComponent("3.11")
-                .appendingPathComponent("Python")
-                .path
-            let pythonPath = frameworkBundleURL?
-                .appendingPathComponent("Versions")
-                .appendingPathComponent("3.11")
-                .appendingPathComponent("lib")
-                .appendingPathComponent("python3.11")
-                .path
-            let libDynloadPath = frameworkBundleURL?
-                .appendingPathComponent("Versions")
-                .appendingPathComponent("3.11")
-                .appendingPathComponent("lib")
-                .appendingPathComponent("python3.11")
-                .appendingPathComponent("lib-dynload")
-                .path
+        do {
+            guard let frameworksURL = Bundle.main.bundleURL
+                .appendingPathComponent("Contents/Frameworks") as NSURL? else {
+                fatalError("Could not locate Frameworks folder.")
+            }
+
+            let pythonFramework = frameworksURL.appendingPathComponent("Python.framework")
+
+            let base = pythonFramework?
+                .appendingPathComponent("Versions/3.11")
+
+            let pythonHome = base?.appendingPathComponent("Python").path
+            let pythonLib  = base?.appendingPathComponent("lib/python3.11").path
+            let dynload    = base?.appendingPathComponent("lib/python3.11/lib-dynload").path
             let appPackages = Bundle.main.path(forResource: "app_packages", ofType: nil)
+
             setenv("PYTHONHOME", pythonHome, 1)
-            setenv("PYTHONPATH", [pythonPath, libDynloadPath, appPackages, Bundle.main.resourcePath!].compactMap { $0 }.joined(separator: ":"), 1)
-            //Py_Initialize()
-            
+            setenv(
+                "PYTHONPATH",
+                [pythonLib, dynload, appPackages, Bundle.main.resourcePath]
+                    .compactMap { $0 }
+                    .joined(separator: ":"),
+                1
+            )
+            Py_Initialize()
+
             let sys = try Python.attemptImport("sys")
             let np  = try Python.attemptImport("numpy")
-            let onepowerMod   = try Python.attemptImport("onepower")
-            let pkToRealMod   = try Python.attemptImport("pk_to_real")
+            let onepower = try Python.attemptImport("onepower")
+            let pkToReal = try Python.attemptImport("pk_to_real")
 
-            self.np          = np
-            self.Spectra     = onepowerMod
-            self.PkTransformer = pkToRealMod
+            self.np = np
+            self.Spectra = onepower
+            self.PkTransformer = pkToReal
+
             self.isInitialised = true
+            _ = sys
 
-            _ = sys  // suppress unused warning
-            
         } catch {
             self.initError = ComputeError.pythonUnavailable
         }
     }
 
-    // Public compute
-    
-    private func performOnPythonThread(_ block: @Sendable @escaping () -> Void) {
-        pythonQueue.async(execute: block)
-    }
-
     /// Runs the full halo-model computation and returns results keyed by subtype.
-    func compute(params p: AppParameters, components: Bool, completion: @escaping (Result<[String: ComputedOutput], Error>) -> Void) {
-        let completionBox = CompletionBox(completion)
-        let paramsBox = ParamsBox(p)
+    func compute(
+        params p: AppParameters,
+        components: Bool
+    ) async throws -> [String: ComputedOutput] {
 
-        let work: @Sendable () -> Void = { [weak self] in
-            guard let bridge = self else { return }
-
-            if let err = bridge.initError {
-                completionBox.completion(.failure(err)); return
-            }
-            if !bridge.isInitialised {
-                bridge.initialisePython()
-                if let err = bridge.initError {
-                    completionBox.completion(.failure(err)); return
-                }
-            }
-
-            do {
-                let result = try bridge.runCompute(params: paramsBox.params, components: components)
-                completionBox.completion(.success(result))
-            } catch {
-                completionBox.completion(.failure(error))
-            }
+        if let err = initError {
+            throw err
         }
-        
-        pythonQueue.async(execute: work)
+
+        if !isInitialised {
+            initialisePython()
+        }
+
+        guard isInitialised else {
+            throw initError ?? ComputeError.pythonUnavailable
+        }
+
+        try Task.checkCancellation()
+
+        return try runCompute(params: p, components: components)
     }
 
     // Internal compute
@@ -230,8 +200,13 @@ final class PythonBridge {
 
         // --- Compute all outputs ---
         var outputs: [String: ComputedOutput] = [:]
+        
+        guard model.checking[dynamicMember: "power_spectrum_mm"] != nil else {
+            throw ComputeError.numericalInstability
+        }
 
         for obs in ObservableOutput.allCases {
+            try Task.checkCancellation()
             let subtype = obs.pythonSubtype
             let category = obs.category
 
@@ -289,8 +264,8 @@ final class PythonBridge {
             "gb": "power_spectrum_gm"
         ]
         guard let attr = psAttr[subtype] else { throw ComputeError.computeFailed("Unknown subtype \(subtype)") }
-
         let ps = model[dynamicMember: attr]
+        
         let k = toDoubleArray(model.k_vec)
 
         if subtype == "gb" {
@@ -365,6 +340,8 @@ final class PythonBridge {
                                    thetamin: Double, thetamax: Double,
                                    components: Bool) throws -> ([Double], [String: [Double]])
     {
+        let modelCopy = model.clone()
+        
         let (sepMin, sepMax): (Double, Double)
         if subtype == "ds" || subtype == "wp" {
             (sepMin, sepMax) = (rpmin, rpmax)
@@ -374,23 +351,25 @@ final class PythonBridge {
 
         let transformer = PkTransformerClass.PkTransformer(
             subtype,
-            model,
+            modelCopy,
             sep_min_in: sepMin,
             sep_max_in: sepMax,
             components: components
         )
-
+        let result = transformer()
         if components {
-            let result = transformer()
             let sep  = toDoubleArray(result[0])
             let xi   = toDoubleArray(result[1])
             let xi1h = toDoubleArray(result[2])
             let xi2h = toDoubleArray(result[3])
+            transformer.close()
+            _ = Python.import("gc").collect()
             return (sep, ["tot": xi, "1h": xi1h, "2h": xi2h])
         } else {
-            let result = transformer()
             let sep = toDoubleArray(result[0])
             let xi  = toDoubleArray(result[1])
+            transformer.close()
+            _ = Python.import("gc").collect()
             return (sep, ["tot": xi])
         }
     }

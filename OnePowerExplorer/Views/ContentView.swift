@@ -3,6 +3,8 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var vm = ExplorerViewModel()
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+    @State private var showReferenceSet = false
+    @State private var showReferenceCleared = false
 
     var body: some View {
         NavigationSplitView(columnVisibility: $sidebarVisibility) {
@@ -13,24 +15,51 @@ struct ContentView: View {
         }
         .frame(minWidth: 1200, minHeight: 600)
         .onAppear {
-            PythonBridge.shared.setup { [weak vm] in
-                vm?.runInitialModelIfNeeded()
+            Task {
+                await PythonBridge.shared.setup()
+                vm.runInitialModelIfNeeded()
             }
         }.toolbar(content: {
             // Use platform-appropriate toolbar placement: `topBarLeading` is iOS-only
             #if os(iOS)
             ToolbarItemGroup(placement: .topBarLeading) {
-                ModelManagementToolbar(vm: vm)
+                ModelManagementToolbar(
+                    vm: vm,
+                    onReferenceSet: {
+                        showReferenceSet = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            showReferenceSet = false
+                        }
+                    },
+                    onReferenceCleared: {
+                        showReferenceCleared = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            showReferenceCleared = false
+                        }
+                    })
             }
             ToolbarItemGroup(placement: .principal) {
-                StatusToolbar(vm: vm)
+                StatusToolbar(vm: vm, showReferenceSet: $showReferenceSet, showReferenceCleared: $showReferenceCleared)
             }
             #else
             ToolbarItemGroup(placement: .navigation) {
-                ModelManagementToolbar(vm: vm)
+                ModelManagementToolbar(
+                    vm: vm,
+                    onReferenceSet: {
+                        showReferenceSet = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            showReferenceSet = false
+                        }
+                    },
+                    onReferenceCleared: {
+                        showReferenceCleared = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            showReferenceCleared = false
+                        }
+                    })
             }
             ToolbarItemGroup(placement: .principal) {
-                StatusToolbar(vm: vm)
+                StatusToolbar(vm: vm, showReferenceSet: $showReferenceSet, showReferenceCleared: $showReferenceCleared)
             }
             #endif
         })

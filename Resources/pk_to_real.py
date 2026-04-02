@@ -1,6 +1,8 @@
 import numpy as np
 import pyfftlog
 import scipy.interpolate
+from astropy.cosmology import Flatw0waCDM
+from astropy import units as u
 
 # Adapted from CosmoSIS Standard Library module, including the pyfftlog.py
 
@@ -13,7 +15,7 @@ TRANSFORM_XIP = 'xip'
 TRANSFORM_XIM = 'xim'
 TRANSFORM_GAMMA = 'gamma'
 
-DEFAULT_N_TRANSFORM = 8192
+DEFAULT_N_TRANSFORM = 2048
 DEFAULT_K_MIN = 0.0001
 DEFAULT_K_MAX = 5.0e6
 DEFAULT_RP_MIN = 0.1
@@ -39,6 +41,87 @@ _TRANSFORM_PARAMETERS = {
     TRANSFORM_GAMMA: (0.0, 2.0),
 }
 
+def comoving_distance_samples(cosmo, z, n=1000):
+    """
+    Replacement for FLRW.comoving_distance using a fixed-sample trapezoidal
+    integration of inv_efunc instead of scipy.integrate.quad.
+
+    Parameters
+    ----------
+    cosmo : astropy.cosmology.FLRW
+        Any astropy FLRW cosmology instance.
+    z : float or array-like
+        Redshift(s) at which to evaluate the comoving distance.
+    n : int, optional
+        Number of integration samples per redshift interval (default 1000).
+        Higher values increase accuracy at the cost of memory/time.
+
+    Returns
+    -------
+    d_C : astropy.units.Quantity
+        Comoving distance(s) in Mpc, same shape as z.
+    """
+    z = np.atleast_1d(np.asarray(z, dtype=float))
+    scalar_input = z.ndim == 1 and z.size == 1
+
+    # Hubble distance c/H0 in Mpc
+    DH = cosmo.hubble_distance  # Quantity in Mpc
+
+    def _integrate_one(z_max):
+        """Trapezoidal integral of inv_efunc from 0 to z_max."""
+        if z_max == 0.0:
+            return 0.0
+        z_grid = np.linspace(0.0, z_max, n)
+        integrand = cosmo.inv_efunc(z_grid)
+        return np.trapz(integrand, z_grid)
+
+    integrals = np.array([_integrate_one(zi) for zi in z.ravel()])
+    integrals = integrals.reshape(z.shape)
+
+    d_C = DH * integrals
+
+    return d_C.squeeze() if scalar_input else d_C
+    
+def kpc_comoving_per_arcmin(cosmo, z, n=1000):
+    """
+    Replacement for FLRW.kpc_comoving_per_arcmin using sample-based integration.
+
+    Parameters
+    ----------
+    cosmo : astropy.cosmology.FLRW
+        Any astropy FLRW cosmology instance.
+    z : float or array-like
+        Redshift(s) at which to evaluate the separation.
+    n : int, optional
+        Number of integration samples passed to comoving_distance_samples.
+
+    Returns
+    -------
+    sep : astropy.units.Quantity
+        Comoving separation in kpc per arcminute, same shape as z.
+    """
+    arcmin_in_rad = (1.0 * u.arcmin).to(u.rad).value
+
+    d_C = comoving_distance_samples(cosmo, z, n=n)
+
+    Ok0 = cosmo.Ok0
+    DH = cosmo.hubble_distance  # c/H0 in Mpc
+
+    if Ok0 == 0.0:
+        # Flat: D_M = D_C
+        d_M = d_C
+    elif Ok0 > 0.0:
+        # Open universe
+        sqrt_Ok0 = np.sqrt(Ok0)
+        d_M = (DH / sqrt_Ok0) * np.sinh(sqrt_Ok0 * d_C / DH)
+    else:
+        # Closed universe
+        sqrt_mOk0 = np.sqrt(-Ok0)
+        d_M = (DH / sqrt_mOk0) * np.sin(sqrt_mOk0 * d_C / DH)
+
+    sep = d_M * arcmin_in_rad * 1000.0 * (u.kpc / u.Mpc)
+
+    return sep.to(u.Mpc)
 
 class LogInterp:
     """
@@ -194,6 +277,20 @@ class PkTransformer(Transformer):
         self.corr_type = corr_type
         self.model = model
 
+        """
+        self.cosmo = Flatw0waCDM(
+            H0=self.model.h0 * 100.0,
+            Ob0=self.model.omega_b,
+            Om0=self.model.omega_c + self.model.omega_b,
+            Neff=self.model.Neff,
+            m_nu=[0.0, 0.0, self.model.m_nu] * u.eV,
+            Tcmb0=self.model.tcmb,
+            w0=self.model.w0,
+            wa=self.model.wa,
+        )
+        """
+        self.cosmo = self.model.cosmo_model
+
         if k_min is None:
             k_min = DEFAULT_K_MIN
         if k_max is None:
@@ -211,13 +308,13 @@ class PkTransformer(Transformer):
         self.components = components
 
         # --- Cosmology ---
-        cosmo = self.model.cosmo_model
-        self.h = cosmo.h
-        self.H0 = cosmo.H0.value  # km/s/Mpc
-        self.Omega_m = cosmo.Om0
+        self.h = self.cosmo.h
+        self.H0 = self.cosmo.H0.value  # km/s/Mpc
+        self.Omega_m = self.cosmo.Om0
 
         # --- Comoving distance ---
-        chi_Mpc = cosmo.comoving_distance(self.z_l + 1e-6).to('Mpc').value
+        chi_Mpc = comoving_distance_samples(self.cosmo, self.z_l + 1e-6).value
+        #chi_Mpc = self.cosmo.comoving_distance(self.z_l + 1e-6).to('Mpc').value
         self.chi_l_Mpc = chi_Mpc  # Mpc (for lensing kernel)
         self.chi_l = chi_Mpc * self.h  # Mpc/h (for Hankel transform)
 
@@ -228,7 +325,8 @@ class PkTransformer(Transformer):
         else:
             # convert arcmin → Mpc/h
             conv = (
-                cosmo.kpc_comoving_per_arcmin(self.z_l + 1e-6).to('Mpc / arcmin').value
+                kpc_comoving_per_arcmin(self.cosmo, self.z_l + 1e-6).value
+                #self.cosmo.kpc_comoving_per_arcmin(self.z_l + 1e-6).to('Mpc / arcmin').value
             )
 
             sep_min = sep_min_in * conv * self.h
@@ -265,7 +363,8 @@ class PkTransformer(Transformer):
                 )
             else:
                 chi_s_Mpc = (
-                    self.model.cosmo_model.comoving_distance(self.z_s).to('Mpc').value
+                    comoving_distance_samples(self.cosmo, self.z_s).value
+                    #self.cosmo.comoving_distance(self.z_s).to('Mpc').value
                 )
 
                 W = (
@@ -316,9 +415,10 @@ class PkTransformer(Transformer):
 
         if self.corr_type in ['wtheta', 'gamma', 'xip', 'xim']:
             conv = (
-                self.model.cosmo_model.kpc_comoving_per_arcmin(self.z_l + 1e-6)
-                .to('Mpc / arcmin')
-                .value
+                #self.cosmo.kpc_comoving_per_arcmin(self.z_l + 1e-6)
+                #.to('Mpc / arcmin')
+                #.value
+                kpc_comoving_per_arcmin(self.cosmo, self.z_l + 1e-6).value
             )
 
             sep_out = sep_out / (conv * self.h)
@@ -326,3 +426,30 @@ class PkTransformer(Transformer):
         if self.components:
             return sep_out, xi, xi_1h, xi_2h
         return sep_out, xi
+
+    def close(self):
+        """Release resources held by the object."""
+        # Clear references to large objects
+        self.model = None
+        self.cosmo = None
+        self.k_vec = None
+        self.z_l = None
+        self.z_s = None
+        # Clear any other large attributes
+        if hasattr(self, 'k'):
+            self.k = None
+        if hasattr(self, 'kr'):
+            self.kr = None
+        if hasattr(self, 'xsave'):
+            self.xsave = None
+        if hasattr(self, 'sep'):
+            self.sep = None
+        if hasattr(self, 'range'):
+            self.range = None
+        
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Call close() when exiting the context."""
+        self.close()

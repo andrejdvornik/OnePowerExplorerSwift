@@ -202,7 +202,7 @@ struct HODParams {
 
 // AppParameters
 
-class AppParameters: ObservableObject {
+final class AppParameters: ObservableObject, @unchecked Sendable {
 
     // General
     @Published var kmin: Double = 1e-3
