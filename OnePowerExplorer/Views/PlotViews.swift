@@ -2,6 +2,46 @@ import SwiftUI
 import Charts
 import LaTeXSwiftUI
 
+struct SmallChartView: View {
+    let obs: ObservableOutput
+    let liveOutput: ComputedOutput
+
+    private var subtype: String { obs.pythonSubtype }
+    private var useLogX: Bool { obs.logX }
+    private var useLogY: Bool { obs.logY }
+
+    var body: some View {
+        Chart {
+            let points = makePoints(liveOutput.x, liveOutput.yTot)
+            ForEach(points) { pt in
+                LineMark(x: .value("x", pt.logX), y: .value("y", pt.logY))
+                    .lineStyle(StrokeStyle(lineWidth: 3))
+                    .foregroundStyle(.blue)
+            }
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartPlotStyle { plotArea in
+            plotArea.background(.clear)
+        }
+        .frame(height: 100)
+    }
+    
+    private func makePoints(_ xs: [Double], _ ys: [Double]) -> [ChartPoint] {
+        zip(xs, ys).compactMap { (x, y) -> ChartPoint? in
+            let xv = useLogX ? (x > 0 ? log10(x) : nil) : x
+            let yv: Double?
+            if subtype == "mi" {
+                yv = useLogY ? (abs(y) > 0 ? log10(abs(y)) : nil) : abs(y)
+            } else {
+                yv = useLogY ? (y > 0 ? log10(y) : nil) : y
+            }
+            guard let xv, let yv, xv.isFinite, yv.isFinite else { return nil }
+            return ChartPoint(logX: xv, logY: yv)
+        }
+    }
+}
+
 // SingleObservableView
 
 struct SingleObservableView: View {
@@ -37,8 +77,8 @@ struct SingleObservableView: View {
                     }
                 }
             } else {
-                ContentUnavailableView("No data for \(obs.rawValue)",
-                                       systemImage: "questionmark.circle")
+                ContentUnavailableView("No data for selected observable",
+                                       systemImage: "questionmark.circle",)
             }
             if vm.computedOutputs[subtype] != nil {
                 CSVExportButton(vm: vm, subtype: subtype)
@@ -84,19 +124,21 @@ struct CombinedPkView: View {
                                     y: .value("P(k)", pt.logY)
                                 )
                                 .foregroundStyle(by: .value("Spectrum", obs.rawValue))
+                                .lineStyle(StrokeStyle(lineWidth: 3))
                             }
                         }
                     }
                 }
+                .clipped()
                 .frame(height: 550)
-                .chartXAxisLabel(position: .bottom, alignment: .center)  { LaTeX("$k \\, [h \\, \\text{Mpc}^{-1}]$").font(.body).foregroundColor(.primary).fixedSize() }
-                .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX("$P(k) \\; [(Mpc/h)^3]$").font(.body).foregroundColor(.primary).fixedSize().rotationEffect(.degrees(-180)) }
+                .chartXAxisLabel(position: .bottom, alignment: .center)  { LaTeX("$k \\; [h \\; \\mathrm{Mpc}^{-1 }]$").font(.body) }
+                .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX("$P(k) \\; [(\\mathrm{Mpc}/h)^3]$").font(.body).rotationEffect(.degrees(-180)) }
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 6)) { val in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                         AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                         if let d = val.as(Double.self) {
-                            AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
+                            AxisValueLabel { LaTeX("$10^{ \(Int(d)) }$").font(.caption) }
                         }
                     }
                 }
@@ -105,7 +147,7 @@ struct CombinedPkView: View {
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                         AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                         if let d = val.as(Double.self) {
-                            AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
+                            AxisValueLabel { LaTeX("$10^{ \(Int(d)) }$").font(.caption) }
                         }
                     }
                 }
@@ -163,7 +205,7 @@ struct LogLogChartView: View {
                 ForEach(pts) { pt in
                     LineMark(x: .value("x", pt.logX), y: .value("y", pt.logY))
                         .foregroundStyle(by: .value("Series", "Reference"))
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [8, 4]))
+                        .lineStyle(StrokeStyle(lineWidth: 2, dash: [8, 4]))
                 }
             }
 
@@ -175,7 +217,7 @@ struct LogLogChartView: View {
                         ForEach(pts) { pt in
                             LineMark(x: .value("x", pt.logX), y: .value("y", pt.logY))
                                 .foregroundStyle(by: .value("Series", key))
-                                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [2, 2]))
+                                .lineStyle(StrokeStyle(lineWidth: 2, dash: [2, 2]))
                         }
                     }
                 }
@@ -186,18 +228,20 @@ struct LogLogChartView: View {
             ForEach(livePts) { pt in
                 LineMark(x: .value("x", pt.logX), y: .value("y", pt.logY))
                     .foregroundStyle(by: .value("Series", "Live Model"))
-                    .lineStyle(StrokeStyle(lineWidth: 2.5))
+                    .lineStyle(StrokeStyle(lineWidth: 3))
             }
         }
+        .clipped()
         .frame(height: 550)
-        .chartXAxisLabel(position: .bottom, alignment: .center) { LaTeX(obs.xLabel).font(.body).foregroundColor(.primary).fixedSize() }
-        .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX(obs.yLabel).font(.body).foregroundColor(.primary).fixedSize().rotationEffect(.degrees(-180)) }
+        //.chartXScale(type: .log)
+        .chartXAxisLabel(position: .bottom, alignment: .center) { LaTeX(obs.xLabel).font(.body) }
+        .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX(obs.yLabel).font(.body).rotationEffect(.degrees(-180)) }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 6)) { val in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                 AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                 if let d = val.as(Double.self) {
-                    AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
+                    AxisValueLabel { LaTeX("$10^{ \(Int(d)) }$").font(.caption) }
                 }
             }
         }
@@ -206,7 +250,7 @@ struct LogLogChartView: View {
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                 AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                 if let d = val.as(Double.self) {
-                    AxisValueLabel { useLogY ? LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() : LaTeX("$\(d)$").font(.caption).foregroundColor(.primary).fixedSize() }
+                    AxisValueLabel { useLogY ? LaTeX("$10^{ \(Int(d)) }$").font(.caption) : LaTeX("$\(d)$").font(.caption) }
                 }
             }
         }
@@ -270,17 +314,19 @@ struct RatioPanelView: View {
                 ForEach(pts) { pt in
                     LineMark(x: .value("x", pt.logX), y: .value("Δ%", pt.logY))
                         .foregroundStyle(.blue)
+                        .lineStyle(StrokeStyle(lineWidth: 3))
                 }
             }
+            .clipped()
             .frame(height: 150)
-            .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX("$(\\text{Live} − \\text{Ref}) / \\text{Ref}  [%]$").font(.body).foregroundColor(.primary).fixedSize().rotationEffect(.degrees(-180)) }
-            .chartXAxisLabel(position: .bottom, alignment: .center) { LaTeX(obs.xLabel).font(.body).foregroundColor(.primary).fixedSize() }
+            .chartYAxisLabel(position: .leading, alignment: .center) { LaTeX("$(\\mathrm{Live} − \\mathrm{Ref}) / \\mathrm{Ref}  [%]$").font(.body).rotationEffect(.degrees(-180)) }
+            .chartXAxisLabel(position: .bottom, alignment: .center) { LaTeX(obs.xLabel).font(.body) }
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 6)) { val in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                     AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                     if let d = val.as(Double.self) {
-                        AxisValueLabel { LaTeX("$10^{\(Int(d))}$").font(.caption).foregroundColor(.primary).fixedSize() }
+                        AxisValueLabel { LaTeX("$10^{ \(Int(d)) }$").font(.caption) }
                     }
                 }
             }
@@ -289,7 +335,7 @@ struct RatioPanelView: View {
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                     AxisTick(stroke: StrokeStyle(lineWidth: 0.25)).foregroundStyle(Color.primary)
                     if let d = val.as(Double.self) {
-                        AxisValueLabel { LaTeX("$\(d)$").font(.caption).foregroundColor(.primary).fixedSize() }
+                        AxisValueLabel { LaTeX("$\(d)$").font(.caption) }
                     }
                 }
             }

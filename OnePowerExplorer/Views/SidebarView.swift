@@ -32,13 +32,13 @@ struct SidebarView: View {
                 */
                 // UI toggles
             Section {
-                Toggle("Compare to reference model", isOn: $uiState.compareReference)
-                Toggle("Show halo model components", isOn: $uiState.showComponents)
-                Toggle("Combine power spectra on one plot", isOn: $uiState.combinePk)
+                Toggle("Compare to reference model", isOn: $uiState.compareReference).toggleStyle(.switch)
+                Toggle("Show halo model components", isOn: $uiState.showComponents).toggleStyle(.switch)
+                Toggle("Combine power spectra on one plot", isOn: $uiState.combinePk).toggleStyle(.switch)
             } header: { Text("Display") }
 
             // Observable selection
-            ObservableSelectionView(uiState: uiState)
+            //ObservableSelectionView(uiState: uiState)
 
             // General settings
             GeneralSettingsView(params: params)
@@ -91,6 +91,7 @@ struct ObservableSelectionView: View {
                         uiState.selectedOutputs = newSet
                     }
                 )) { LaTeX(obs.rawValue).imageRenderingMode(.template).foregroundColor(.primary).fixedSize().preload() }
+                    .toggleStyle(.switch)
             }
         }, header: { Text("Observables") })
     }
@@ -105,14 +106,14 @@ struct GeneralSettingsView: View {
     var body: some View {
         Section(isExpanded: $topExpanded, content: {
             LabeledIntField(label: "$N_k$ points", value: $params.nk, range: 10...1000)
-            LabeledNumberField("$k_{\\text{min}} \\, [h \\, \\text{Mpc}^{-1}]$", value: $params.kmin, format: "%.4e")
-            LabeledNumberField("$k_{\\text{max}} \\, [h \\, \\text{Mpc}^{-1}]$", value: $params.kmin)
-            LabeledNumberField("$M_{\\text{min}} \\, [\\log_{10}(h^{-1} \\,  M_\\odot)]$", value: $params.mmin)
-            LabeledNumberField("$M_{\\text{max}} \\, [\\log_{10}(h^{-1} \\,  M_\\odot)]$", value: $params.mmax)
-            LabeledNumberField("$r_{p,\\text{min}} \\, [h^{-1} \\, \\text{Mpc}]$", value: $params.rpmin)
-            LabeledNumberField("$r_{p,\\text{max}} \\, [h^{-1} \\, \\text{Mpc}]$", value: $params.rpmax)
-            LabeledNumberField("$\\theta_{\\text{min}} \\, [\\text{arcmin}]$", value: $params.thetamin)
-            LabeledNumberField("$\\theta_{\\text{max}} \\, [\\text{arcmin}]$", value: $params.thetamax)
+            LabeledNumberField("$k_{\\mathrm{min} } \\; [h \\; \\mathrm{Mpc}^{-1 }]$", value: $params.kmin, format: "%.4e")
+            LabeledNumberField("$k_{\\mathrm{max} } \\; [h \\; \\mathrm{Mpc}^{-1 }]$", value: $params.kmax)
+            LabeledNumberField("$M_{\\mathrm{min} } \\; [\\log_{10 }(h^{-1 } \\;  M_{\\odot })]$", value: $params.mmin)
+            LabeledNumberField("$M_{\\mathrm{max} } \\; [\\log_{10 }(h^{-1 } \\;  M_{\\odot })]$", value: $params.mmax)
+            LabeledNumberField("$r_{p,\\mathrm{min} } \\; [h^{-1 } \\; \\mathrm{Mpc}]$", value: $params.rpmin)
+            LabeledNumberField("$r_{p,\\mathrm{max} } \\; [h^{-1 } \\; \\mathrm{Mpc}]$", value: $params.rpmax)
+            LabeledNumberField("$\\theta_{\\mathrm{min} } \\; [\\mathrm{arcmin}]$", value: $params.thetamin)
+            LabeledNumberField("$\\theta_{\\mathrm{max} } \\; [\\mathrm{arcmin}]$", value: $params.thetamax)
         }, header: { Text("General Settings") })
     }
 }
@@ -121,20 +122,20 @@ struct GeneralSettingsView: View {
 
 struct CosmoParamsView: View {
     @ObservedObject var params: AppParameters
-    @State private var topExpanded: Bool = false
+    @State private var topExpanded: Bool = true
 
     var body: some View {
         Section(isExpanded: $topExpanded, content: {
-            LabeledSliderField("$\\Omega_{\\text{c}}$", value: $params.omega_c, step: 0.01, range: 0.001...1.0)
-            LabeledSliderField("$\\Omega_{\\text{b}}$", value: $params.omega_b, step: 0.00, range: 0.001...1.0)
+            LabeledSliderField("$\\Omega_{\\mathrm{c} }$", value: $params.omega_c, step: 0.01, range: 0.001...1.0)
+            LabeledSliderField("$\\Omega_{\\mathrm{b} }$", value: $params.omega_b, step: 0.00, range: 0.001...1.0)
             LabeledSliderField("$h$", value: $params.h, step: 0.01, range: 0.1...1.0)
             LabeledSliderField("$n_s$", value: $params.ns, step: 0.005, range: 0.0...2.0)
             LabeledSliderField("$\\sigma_8$", value: $params.sigma_8, step: 0.01, range: 0.0...2.0)
             LabeledSliderField("Redshift $z$", value: $params.z_vec, step: 0.1, range: 0.0...2.0)
-            LabeledSliderField("$\\Sigma m_{\\nu} [\\text{eV}]$", value: $params.m_nu, step: 0.01, range: 0.0...0.1)
+            LabeledSliderField("$\\Sigma m_{\\nu} [\\mathrm{eV}]$", value: $params.m_nu, step: 0.01, range: 0.0...0.1)
             LabeledSliderField("$w_0$", value: $params.w0, step: 0.05, range: -1.5...(-0.5))
             LabeledSliderField("$w_a$", value: $params.wa, step: 0.05, range: -1.0...0.5)
-            LabeledSliderField("$T_{\\text{CMB}} [\\text{K}]$", value: $params.tcmb, step: 0.01, range: 2.0...5.0)
+            LabeledSliderField("$T_{\\mathrm{CMB} } [\\mathrm{K}]$", value: $params.tcmb, step: 0.01, range: 2.0...5.0)
         }, header: { Text("Cosmological Parameters") })
     }
 }
@@ -147,8 +148,8 @@ struct HaloModelParamsView: View {
 
     var body: some View {
         Section(isExpanded: $topExpanded, content: {
-            Toggle("Dewiggle", isOn: $params.dewiggle)
-            Toggle("Point Mass", isOn: $params.pointmass)
+            Toggle("Dewiggle", isOn: $params.dewiggle).toggleStyle(.switch)
+            Toggle("Point Mass", isOn: $params.pointmass).toggleStyle(.switch)
 
             EnumPicker(label: "Mass definition", selection: $params.mdefModel)
             EnumPicker(label: "HMF model", selection: $params.hmfModel)
@@ -159,7 +160,7 @@ struct HaloModelParamsView: View {
             EnumPicker(label: "Concentration (galaxies)", selection: $params.haloConcentrationSat)
 
             LabeledSliderField("Overdensity", value: $params.overdensity, step: 1, range: 50...1000)
-            LabeledSliderField("$\\delta_{\\text{c}}$", value: $params.delta_c, step: 0.001, range: 0.5...3.0, format: "%.3f")
+            LabeledSliderField("$\\delta_{\\mathrm{c} }$", value: $params.delta_c, step: 0.001, range: 0.5...3.0, format: "%.3f")
             LabeledSliderField("Norm $c(M)$ matter", value: $params.norm_cen, step: 0.01, range: 0.0...2.0)
             LabeledSliderField("Norm $c(M)$ gal", value: $params.norm_sat, step: 0.01, range: 0.0...2.0)
             LabeledSliderField("$\\eta$ matter", value: $params.eta_cen, step: 0.01, range: -2.0...2.0)
@@ -168,15 +169,15 @@ struct HaloModelParamsView: View {
             EnumPicker(label: "HMCode ingredients", selection: $params.hmcodeIngredients)
 
             if params.hmcodeIngredients == .mead2020_feedback {
-                LabeledSliderField("$\\log_{10} T_{\\text{AGN}}$", value: $params.log10T_AGN, step: 0.01, range: 6.0...10.0)
+                LabeledSliderField("$\\log_{10 } T_{\\mathrm{AGN} }$", value: $params.log10T_AGN, step: 0.01, range: 6.0...10.0)
             }
             if params.hmcodeIngredients == .fit {
-                LabeledSliderField("$M_{\\text{b}}$", value: $params.mb, step: 0.01, range: 9.0...15.0)
+                LabeledSliderField("$M_{\\mathrm{b} }$", value: $params.mb, step: 0.01, range: 9.0...15.0)
             }
 
             EnumPicker(label: "Nonlinear mode", selection: $params.nonlinearMode)
             if params.nonlinearMode == .fortuna {
-                LabeledSliderField("$t_{\\text{eff}}$", value: $params.t_eff, step: 0.01, range: 0.0...1.0)
+                LabeledSliderField("$t_{\\mathrm{eff} }$", value: $params.t_eff, step: 0.01, range: 0.0...1.0)
             }
         }, header: { Text("Halo Model Parameters") })
     }
@@ -191,8 +192,8 @@ struct HODParamsView: View {
     var body: some View {
         Section(isExpanded: $topExpanded, content: {
             EnumPicker(label: "HOD model", selection: $params.hodModel)
-            LabeledNumberField("$M^{*}_{\\text{min}}$", value: $params.obs_min, step: 0.1)
-            LabeledNumberField("$M^{*}_{\\text{max}}$", value: $params.obs_max, step: 0.1)
+            LabeledNumberField("$M^{* }_{\\mathrm{min} }$", value: $params.obs_min, step: 0.1)
+            LabeledNumberField("$M^{* }_{\\mathrm{max} }$", value: $params.obs_max, step: 0.1)
 
             switch params.hodModel {
             case .Cacciato:
@@ -206,8 +207,8 @@ struct HODParamsView: View {
             }
 
             // Assembly bias (all models)
-            LabeledSliderField("$A_{\\text{cen}}$", value: $params.hodParams.A_cen, step: 0.01, range: -1.0...1.0)
-            LabeledSliderField("$A_{\\text{sat}}$", value: $params.hodParams.A_sat, step: 0.01, range: -1.0...1.0)
+            LabeledSliderField("$A_{\\mathrm{cen} }$", value: $params.hodParams.A_cen, step: 0.01, range: -1.0...1.0)
+            LabeledSliderField("$A_{\\mathrm{sat} }$", value: $params.hodParams.A_sat, step: 0.01, range: -1.0...1.0)
         }, header: { Text("HOD Parameters") })
     }
 }
@@ -216,15 +217,15 @@ struct CacciatoParamsView: View {
     @Binding var p: HODParams
     var body: some View {
         Group {
-            LabeledSliderField("$\\log_{10} O_{\\text{norm,c}}$", value: $p.log10_obs_norm_c, step: 0.01, range: 1.0...15.0)
-            LabeledSliderField("$\\log_{10} M_{\\text{ch}}$", value: $p.log10_m_ch, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } O_{\\mathrm{norm,c} }$", value: $p.log10_obs_norm_c, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_{\\mathrm{ch} }$", value: $p.log10_m_ch, step: 0.01, range: 1.0...15.0)
             LabeledSliderField("$\\gamma_1$", value: $p.g1, step: 0.01, range: -5.0...5.0)
             LabeledSliderField("$\\gamma_2$", value: $p.g2, step: 0.01, range: -5.0...5.0)
-            LabeledSliderField("$\\sigma_{\\text{c}}$", value: $p.sigma_log10_O_c, step: 0.01, range: 0.01...3.0)
-            LabeledSliderField("$\\text{norm}_{\\text{s}}$", value: $p.norm_s, step: 0.01, range: 0.0...2.0)
-            LabeledSliderField("$M_{\\text{pivot}}$", value: $p.pivot, step: 0.01, range: 1.0...15.0)
-            LabeledSliderField("$\\alpha_{\\text{s}}$", value: $p.alpha_s, step: 0.01, range: -5.0...5.0)
-            LabeledSliderField("$\\beta_{\\text{s}}$", value: $p.beta_s, step: 0.01, range: -5.0...5.0)
+            LabeledSliderField("$\\sigma_{\\mathrm{c} }$", value: $p.sigma_log10_O_c, step: 0.01, range: 0.01...3.0)
+            LabeledSliderField("$\\mathrm{norm}_{\\mathrm{s} }$", value: $p.norm_s, step: 0.01, range: 0.0...2.0)
+            LabeledSliderField("$M_{\\mathrm{pivot} }$", value: $p.pivot, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\alpha_{\\mathrm{s} }$", value: $p.alpha_s, step: 0.01, range: -5.0...5.0)
+            LabeledSliderField("$\\beta_{\\mathrm{s} }$", value: $p.beta_s, step: 0.01, range: -5.0...5.0)
             LabeledSliderField("$b_0$", value: $p.b0, step: 0.01, range: -5.0...5.0)
             LabeledSliderField("$b_1$", value: $p.b1, step: 0.01, range: -5.0...5.0)
             LabeledSliderField("$b_2$", value: $p.b2, step: 0.01, range: -5.0...5.0)
@@ -236,9 +237,9 @@ struct ZhengParamsView: View {
     @Binding var p: HODParams
     var body: some View {
         Group {
-            LabeledSliderField("$\\log_{10} M_{\\text{min}}$", value: $p.log10_Mmin, step: 0.01, range: 1.0...15.0)
-            LabeledSliderField("$\\log_{10} M_0$", value: $p.log10_M0, step: 0.01, range: 1.0...15.0)
-            LabeledSliderField("$\\log_{10} M_1$", value: $p.log10_M1, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_{\\mathrm{min} }$", value: $p.log10_Mmin, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_0$", value: $p.log10_M0, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_1$", value: $p.log10_M1, step: 0.01, range: 1.0...15.0)
             LabeledSliderField("$\\sigma$", value: $p.sigma, step: 0.01, range: 0.01...3.0)
             LabeledSliderField("$\\alpha$", value: $p.alpha, step: 0.01, range: -5.0...5.0)
         }
@@ -249,8 +250,8 @@ struct SimpleParamsView: View {
     @Binding var p: HODParams
     var body: some View {
         Group {
-            LabeledSliderField("$\\log_{10} M_{\\text{min}}$", value: $p.log10_Mmin, step: 0.01, range: 1.0...15.0)
-            LabeledSliderField("$\\log_{10} M_{\\text{sat}}$", value: $p.log10_Msat, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_{\\mathrm{min} }$", value: $p.log10_Mmin, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_{\\mathrm{sat} }$", value: $p.log10_Msat, step: 0.01, range: 1.0...15.0)
             LabeledSliderField("$\\alpha$", value: $p.alpha, step: 0.01, range: -5.0...5.0)
         }
     }
@@ -260,9 +261,9 @@ struct ZhaiParamsView: View {
     @Binding var p: HODParams
     var body: some View {
         Group {
-            LabeledSliderField("$\\log_{10} M_{\\text{min}}$", value: $p.log10_Mmin, step: 0.01, range: 1.0...15.0)
-            LabeledSliderField("$\\log_{10} M_{\\text{sat}}$", value: $p.log10_Msat, step: 0.01, range: 1.0...15.0)
-            LabeledSliderField("$\\log_{10} M_{\\text{cut}}$", value: $p.log10_Mcut, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_{\\mathrm{min} }$", value: $p.log10_Mmin, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_{\\mathrm{sat} }$", value: $p.log10_Msat, step: 0.01, range: 1.0...15.0)
+            LabeledSliderField("$\\log_{10 } M_{\\mathrm{cut} }$", value: $p.log10_Mcut, step: 0.01, range: 1.0...15.0)
             LabeledSliderField("$\\sigma$", value: $p.sigma, step: 0.01, range: 0.01...3.0)
             LabeledSliderField("$\\alpha$", value: $p.alpha, step: 0.01, range: -5.0...5.0)
         }
@@ -289,10 +290,11 @@ struct LabeledNumberField: View {
             LaTeX(label)
                 .imageRenderingMode(.template)
                 .foregroundColor(.primary)
-                .frame(width: 120, alignment: .leading)
+                //.frame(width: 120, alignment: .leading)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .fixedSize()
+                .errorMode(.error)
                 .preload()
             Spacer()
             TextField("", value: $value, formatter: formatter)
@@ -345,19 +347,20 @@ struct LabeledSliderField: View {
             LaTeX(label)
                 .imageRenderingMode(.template)
                 .foregroundColor(.primary)
-                .frame(width: 120, alignment: .leading)
+                //.frame(width: 120, alignment: .leading)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .fixedSize()
+                .errorMode(.error)
                 .preload()
             Spacer()
             Slider(value: $normalizedValue)
                 .controlSize(.small)
+                .frame(width: 120, alignment: .trailing)
                 .onChange(of: normalizedValue) {_, newValue in
                     // Update the external value when the slider changes
                     value = Self.denormalize(newValue, range: range)
                 }
-            Spacer()
             TextField("", value: $value, formatter: formatter)
                 .textFieldStyle(.roundedBorder)
                 .multilineTextAlignment(.trailing)
@@ -410,8 +413,9 @@ struct LabeledIntField: View {
             LaTeX(label)
                 .imageRenderingMode(.template)
                 .foregroundColor(.primary)
-                .frame(width: 120, alignment: .leading)
+                //.frame(width: 120, alignment: .leading)
                 .fixedSize()
+                .errorMode(.error)
                 .preload()
             Spacer()
             TextField("", value: $value, formatter: formatter)
@@ -445,10 +449,11 @@ struct EnumPicker<T: RawRepresentable & CaseIterable & Hashable>: View
             LaTeX(label)
                 .imageRenderingMode(.template)
                 .foregroundColor(.primary)
-                .frame(minWidth: 120, alignment: .leading)
+                //.frame(minWidth: 120, alignment: .leading)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .fixedSize()
+                .errorMode(.error)
                 .preload()
             Spacer()
             Picker("", selection: $selection) {

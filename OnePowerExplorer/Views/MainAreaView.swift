@@ -4,6 +4,7 @@ import LaTeXSwiftUI
 struct MainAreaView: View {
     @ObservedObject var vm: ExplorerViewModel
     @State private var selectedTab: String = ""
+    @State private var zoomedChart: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,7 +23,7 @@ struct MainAreaView: View {
                 if vm.uiState.selectedOutputs.isEmpty {
                     emptySelectionView
                 } else {
-                    outputTabsView
+                    outputDashboardView
                 }
                 
             case .failed(let msg):
@@ -32,7 +33,7 @@ struct MainAreaView: View {
                 if vm.uiState.selectedOutputs.isEmpty {
                     emptySelectionView
                 } else {
-                    outputTabsView
+                    outputDashboardView
                 }
             }
         }
@@ -107,7 +108,7 @@ struct MainAreaView: View {
         return TabView(selection: $selectedTab) {
             ForEach(tabs, id: \.tag) { tab in
                 tab.view
-                .tabItem { LaTeX(tab.title).imageRenderingMode(.template).foregroundColor(.secondary).fixedSize() }
+                .tabItem { Text(tab.title) }
                 .tag(tab.tag)
             }
         }
@@ -119,41 +120,159 @@ struct MainAreaView: View {
         .clipShape(ContainerRelativeShape())
         .padding(10)
     }
+    
+    private var outputDashboardView: some View {
+        let allObs = ObservableOutput.allCases
+
+        let pkObs = allObs.filter { $0.category == "pk" && $0 != .gb }
+        let otherObs = allObs.filter { $0.category != "pk" || $0 == .gb }
+        let combinePk = vm.uiState.combinePk && !pkObs.isEmpty
+
+        var charts: [DashboardChart] = []
+        if combinePk {
+            let combinedView = AnyView(CombinedPkView(vm: vm, pkObs: pkObs))
+            charts.append(DashboardChart(
+                tag: "combined_pk",
+                title: "Power Spectra",
+                obs: pkObs.first!, // placeholder, used only for type info
+                liveOutput: pkObs.first.flatMap { vm.computedOutputs[$0.pythonSubtype] },
+                fullView: combinedView
+            ))
+            for obs in otherObs {
+                let fullView = AnyView(SingleObservableView(vm: vm, obs: obs))
+                charts.append(DashboardChart(
+                    tag: obs.id,
+                    title: obs.rawValue,
+                    obs: obs,
+                    liveOutput: vm.computedOutputs[obs.pythonSubtype],
+                    fullView: fullView
+                ))
+            }
+        } else {
+            for obs in allObs {
+                let fullView = AnyView(SingleObservableView(vm: vm, obs: obs))
+                charts.append(DashboardChart(
+                    tag: obs.id,
+                    title: obs.rawValue,
+                    obs: obs,
+                    liveOutput: vm.computedOutputs[obs.pythonSubtype],
+                    fullView: fullView
+                ))
+            }
+        }
+
+        return DashboardGridView(charts: charts, zoomedChart: $zoomedChart).padding()
+    }
+    
+    struct DashboardGridView: View {
+        let charts: [DashboardChart]
+        
+        @Binding var zoomedChart: String?
+        @Namespace private var namespace
+        
+        var body: some View {
+            ZStack {
+                if zoomedChart == nil {
+                    ScrollView {
+                        let columns = [GridItem(.adaptive(minimum: 220), spacing: 16)]
+                        LazyVGrid(columns: columns, spacing: 16) {
+                            ForEach(charts, id: \.tag) { chart in
+                                VStack {
+                                    LaTeX(chart.title)
+                                        .font(.headline)
+                                    if let live = chart.liveOutput {
+                                        SmallChartView(obs: chart.obs, liveOutput: live)
+                                    } else {
+                                        Text("No data").foregroundColor(.secondary)
+                                    }
+                                }
+                                .frame(minWidth: 220, minHeight: 165)
+                                .aspectRatio(4 / 3, contentMode: .fill)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(.thinMaterial).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.2), lineWidth: 1)))
+                                .matchedGeometryEffect(id: chart.tag, in: namespace)
+                                .onTapGesture {
+                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                        zoomedChart = chart.tag
+                                    }
+                                }
+                                .opacity(zoomedChart == nil ? 1 : 0)
+                            }
+                        }
+                        .padding()
+                    }
+                }
+                
+                if let tag = zoomedChart, let chart = charts.first(where: { $0.tag == tag }) {
+                    VStack {
+                        LaTeX(chart.title)
+                            .font(.largeTitle)
+                            .padding()
+                        chart.fullView
+                            .frame(minWidth: 600, minHeight: 400)
+                    }
+                    .background(ContainerRelativeShape().fill(.thinMaterial).overlay(ContainerRelativeShape().stroke(Color.primary.opacity(0.2), lineWidth: 1)))
+                    .matchedGeometryEffect(id: chart.tag, in: namespace)
+                    .transition(.scale.combined(with: .opacity))
+                    .zIndex(1)
+                }
+            }
+            .clipShape(ContainerRelativeShape())
+            //.padding()
+            //.frame(maxWidth: .infinity, maxHeight: .infinity)
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    if zoomedChart != nil {
+                        Button("Back", systemImage: "chevron.left", action: {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                zoomedChart = nil
+                            }
+                        })
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct DashboardChart {
+    let tag: String
+    let title: String
+    let obs: ObservableOutput
+    let liveOutput: ComputedOutput?
+    let fullView: AnyView
 }
 
 // Model Management Toolbar
 
 struct ModelManagementToolbar: View {
     @ObservedObject var vm: ExplorerViewModel
-    @State private var exportSubtype: String?
-    @State private var showExportPanel = false
+    //@State private var exportSubtype: String?
+    //@State private var showExportPanel = false
     var onReferenceSet: (() -> Void)?
     var onReferenceCleared: (() -> Void)?
 
     var body: some View {
-        HStack {
-            Button("Set as reference") {
+        ControlGroup {
+            Button("Set", systemImage: "plus") {
                 vm.setReferenceModel()
                 onReferenceSet?()
             }
             .disabled(vm.computedOutputs.isEmpty)
-            
-            Divider().padding(.vertical, 8)
-            Button("Clear reference") {
+            .help("Set the current computed outputs as the reference model for comparison")
+            Button("Clear", systemImage: "trash") {
                 vm.clearReferenceModel()
                 onReferenceCleared?()
             }
             .disabled(vm.referenceModel == nil)
-        }
-        //.padding(.horizontal, 12)
-        .frame(alignment: .leading)
+            .help("Clear the reference model")
+        }.controlGroupStyle(.navigation)
     }
 }
 
 struct StatusToolbar: View {
     @ObservedObject var vm: ExplorerViewModel
-    @State private var exportSubtype: String?
-    @State private var showExportPanel = false
+    //@State private var exportSubtype: String?
+    //@State private var showExportPanel = false
     @Binding var showReferenceSet: Bool
     @Binding var showReferenceCleared: Bool
 

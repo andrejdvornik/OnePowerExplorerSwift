@@ -1,5 +1,5 @@
 {
-  "originHash" : "97cf5fa3efa295c4f167a6b4d8807f2912a6eee841ff98e37ec79008d22a762f",
+  "originHash" : "53d92cde254969b4690621573b59e065c4cf2f69d45c5112b9fe2db597ee401c",
   "pins" : [
     {
       "identity" : "latexswiftui",
@@ -7,7 +7,7 @@
       "location" : "https://github.com/colinc86/LaTeXSwiftUI",
       "state" : {
         "branch" : "main",
-        "revision" : "c45e0fd45f64923c49c5904a9f9626bc8939f05f"
+        "revision" : "cc677f66b9cc1751e09207621d62d1cda0200675"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/colinc86/MathJaxSwift",
       "state" : {
-        "revision" : "e23d6eab941da699ac4a60fb0e60f3ba5c937459",
-        "version" : "3.4.0"
+        "revision" : "00e9c3df6b1c82031c7fe3785028f3d21c0d73ba",
+        "version" : "3.5.0"
       }
     },
     {

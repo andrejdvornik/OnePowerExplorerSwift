@@ -6,13 +6,18 @@ struct OnePowerExplorerApp: App {
         WindowGroup {
             ContentView()
                 .frame(minWidth: 1200, minHeight: 600)
+                .onAppear {
+                    #if os(macOS)
+                    NSWindow.allowsAutomaticWindowTabbing = false
+                    #endif
+                }
         }
         #if os(macOS)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
         #endif
         .commands {
-            CommandGroup(replacing: .newItem) {}
+            Menus()
         }
     }
 }

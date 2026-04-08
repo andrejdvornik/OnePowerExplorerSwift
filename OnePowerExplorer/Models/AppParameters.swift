@@ -66,13 +66,13 @@ enum HODModel: String, CaseIterable, Identifiable {
 enum ObservableOutput: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
-    case pmm = "Matter Power Spectrum $P_{\\text{mm}}(k)$"
-    case pgm = "Galaxy-matter Power Spectrum $P_{\\text{gm}}(k)$"
-    case pgg = "Galaxy-galaxy Power Spectrum $P_{\\text{gg}}(k)$"
-    case pii = "Intrinsic-intrinsic Power Spectrum $P_{\\text{II}}(k)$"
-    case pgi = "Galaxy-Intrinsic Power Spectrum $P_{\\text{gI}}(k)$"
-    case pmi = "Matter-Intrinsic Power Spectrum $P_{\\text{mI}}(k)$"
-    case gb  = "Galaxy Bias $b_{\\text{g}}(k)$"
+    case pmm = "Matter Power Spectrum $P_{\\mathrm{mm}}(k)$"
+    case pgm = "Galaxy-matter Power Spectrum $P_{\\mathrm{gm}}(k)$"
+    case pgg = "Galaxy-galaxy Power Spectrum $P_{\\mathrm{gg}}(k)$"
+    case pii = "Intrinsic-intrinsic Power Spectrum $P_{\\mathrm{II}}(k)$"
+    case pgi = "Galaxy-Intrinsic Power Spectrum $P_{\\mathrm{gI}}(k)$"
+    case pmi = "Matter-Intrinsic Power Spectrum $P_{\\mathrm{mI}}(k)$"
+    case gb  = "Galaxy Bias $b_{\\mathrm{g}}(k)$"
     case hmf = "Halo Mass Function"
     case biasFn = "Halo Bias Function"
     case concMatter = "Concentration (matter)"
@@ -121,24 +121,24 @@ enum ObservableOutput: String, CaseIterable, Identifiable {
     var xLabel: String {
         switch self {
         case .pmm, .pgm, .pgg, .pii, .pgi, .pmi, .gb:
-            return "$k \\, [h \\, \\text{Mpc}^{-1}]$"
+            return "$k \\; [h \\; \\mathrm{Mpc}^{-1 }]$"
         case .hmf, .biasFn, .concMatter, .concGal:
-            return "$M_h \\, [h^{-1} \\, M_\\odot]$"
+            return "$M_h \\; [h^{-1 } \\; M_{\\odot }]$"
         case .hod, .smf:
-            return "$M^{*} \\, [h^{-2} \\, M_\\odot]$"
+            return "$M^{* } \\; [h^{-2 } \\; M_{\\odot }]$"
         case .ds, .wp:
-            return "$r_p \\, [h^{-1} \\, \\text{Mpc}]$"
+            return "$r_p \\; [h^{-1 } \\; \\mathrm{Mpc}]$"
         case .wtheta, .gamma, .xip, .xim:
-            return "$\\theta \\, [\\text{arcmin}]$"
+            return "$\\theta \\; [\\mathrm{arcmin}]$"
         }
     }
 
     var yLabel: String {
         switch self {
         case .pmm, .pgm, .pgg, .pii, .pgi:
-            return "$P(k) \\; [(Mpc/h)^3]$"
+            return "$P(k) \\; [(\\mathrm{Mpc}/h)^3]$"
         case .pmi:
-            return "$|P(k)| \\; [(Mpc/h)^3]$"
+            return "$|P(k)| \\; [(\\mathrm{Mpc}/h)^3]$"
         case .gb:
             return "$b_g(k)$"
         case .hmf:
@@ -148,13 +148,13 @@ enum ObservableOutput: String, CaseIterable, Identifiable {
         case .concMatter, .concGal:
             return "$c(M)$"
         case .smf:
-            return "$\\Phi \\, [h^3 \\, \\text{dex}^{-1} \\text{Mpc}^{-3}]$"
+            return "$\\Phi \\; [h^3 \\; \\mathrm{dex}^{-1 } \\mathrm{Mpc}^{-3 }]$"
         case .hod:
             return "$<N|M>$"
         case .ds:
-            return "$\\Delta \\Sigma \\, [h \\, M_\\odot/\\text{pc}^2]$"
+            return "$\\Delta \\Sigma \\; [h \\; M_{\\odot }/\\mathrm{pc}^{2 }]$"
         case .wp:
-            return "$w_p(r_p) \\, [h^{-1} \\; \\text{Mpc}]$"
+            return "$w_p(r_p) \\; [h^{-1 } \\; \\mathrm{Mpc}]$"
         case .wtheta:
             return "$w(\\theta)$"
         case .gamma:
@@ -261,7 +261,7 @@ final class AppParameters: ObservableObject, @unchecked Sendable {
 extension AppParameters {
     func copy() -> AppParameters {
         let p = AppParameters()
-
+        
         // General
         p.kmin = kmin
         p.kmax = kmax
@@ -272,7 +272,7 @@ extension AppParameters {
         p.rpmax = rpmax
         p.thetamin = thetamin
         p.thetamax = thetamax
-
+        
         // Cosmology
         p.omega_c = omega_c
         p.omega_b = omega_b
@@ -284,7 +284,7 @@ extension AppParameters {
         p.w0 = w0
         p.wa = wa
         p.tcmb = tcmb
-
+        
         // Halo model
         p.dewiggle = dewiggle
         p.pointmass = pointmass
@@ -306,7 +306,7 @@ extension AppParameters {
         p.mb = mb
         p.nonlinearMode = nonlinearMode
         p.t_eff = t_eff
-
+        
         // HOD
         p.hodModel = hodModel
         p.obs_min = obs_min
@@ -314,8 +314,66 @@ extension AppParameters {
         p.hodParams = hodParams
         
         p.allOutputs = allOutputs
-
+        
         return p
+    }
+}
+
+extension AppParameters {
+    func resetParameters() {
+        // General
+        kmin = 1e-3
+        kmax = 10.0
+        nk = 300
+        mmin = 9.0
+        mmax = 15.0
+        rpmin = 0.1
+        rpmax = 20.0
+        thetamin = 0.5
+        thetamax = 200.0
+
+        // Cosmology
+        omega_c = 0.25
+        omega_b = 0.05
+        h = 0.7
+        ns = 0.9
+        sigma_8 = 0.8
+        z_vec = 0.0
+        m_nu = 0.06
+        w0 = -1.0
+        wa = 0.0
+        tcmb = 2.7255
+
+        // Halo model
+        dewiggle = false
+        pointmass = false
+        mdefModel = .SOMean
+        hmfModel = .Tinker10
+        biasModel = .Tinker10
+        haloProfileDM = .NFW
+        haloProfileSat = .NFW
+        haloConcentrationDM = .Duffy08
+        haloConcentrationSat = .Duffy08
+        overdensity = 200.0
+        delta_c = 1.696
+        norm_cen = 1.0
+        norm_sat = 1.0
+        eta_cen = 0.0
+        eta_sat = 0.0
+        hmcodeIngredients = .none
+        log10T_AGN = 7.8
+        mb = 13.87
+        nonlinearMode = .none
+        t_eff = 0.0
+
+        // HOD
+        hodModel = .Cacciato
+        obs_min = 8.0
+        obs_max = 12.0
+        hodParams = HODParams()
+
+        // Outputs
+        allOutputs = [.pmm, .pgm, .pgg, .pii, .pgi, .pmi, .gb, .hmf, .biasFn, .concMatter, .concGal, .smf, .hod, .ds, .wp, .wtheta, .gamma, .xip, .xim]
     }
 }
 
