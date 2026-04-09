@@ -7,34 +7,33 @@ struct MainAreaView: View {
     @State private var zoomedChart: String? = nil
 
     var body: some View {
-        VStack(spacing: 0) {
-            // State-dependent content
-            switch vm.computeState {
-            case .idle:
-                //idleView
-                if vm.uiState.selectedOutputs.isEmpty {
-                    emptySelectionView
-                } else {
-                    idleView
-                }
-                
-            case .computing:
-                //computingView(message: msg)
-                if vm.uiState.selectedOutputs.isEmpty {
-                    emptySelectionView
-                } else {
-                    outputDashboardView
-                }
-                
-            case .failed(let msg):
-                errorView(message: msg)
-                
-            default:
-                if vm.uiState.selectedOutputs.isEmpty {
-                    emptySelectionView
-                } else {
-                    outputDashboardView
-                }
+        // State-dependent content
+        switch vm.computeState {
+        case .idle:
+            //idleView
+            if vm.uiState.selectedOutputs.isEmpty {
+                emptySelectionView
+            } else {
+                idleView
+            }
+            
+        case .computing:
+            //computingView(message: msg)
+            if vm.uiState.selectedOutputs.isEmpty {
+                emptySelectionView
+            } else {
+                outputDashboardView
+            }
+            
+        case .failed(let msg):
+            errorView(message: msg)
+            //outputDashboardView
+            
+        default:
+            if vm.uiState.selectedOutputs.isEmpty {
+                emptySelectionView
+            } else {
+                outputDashboardView
             }
         }
     }
@@ -46,7 +45,10 @@ struct MainAreaView: View {
             "No results yet",
             systemImage: "chart.line.uptrend.xyaxis",
             description: Text("Wait for the initial model to evaluate.")
-        ).frame(maxWidth: .infinity, maxHeight: .infinity)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(ContainerRelativeShape())
+        .padding(10)
     }
 
     private func computingView(message: String) -> some View {
@@ -59,6 +61,8 @@ struct MainAreaView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(ContainerRelativeShape())
+        .padding(10)
     }
 
     private func errorView(message: String) -> some View {
@@ -66,7 +70,10 @@ struct MainAreaView: View {
             "Computation Failed",
             systemImage: "flame.fill",
             description: Text(message)
-        ).frame(maxWidth: .infinity, maxHeight: .infinity)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(ContainerRelativeShape())
+        .padding(10)
     }
 
     private var emptySelectionView: some View {
@@ -74,7 +81,10 @@ struct MainAreaView: View {
             "No observable selected",
             systemImage: "checklist",
             description: Text("Check at least one observable in the sidebar.")
-        ).frame(maxWidth: .infinity, maxHeight: .infinity)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(ContainerRelativeShape())
+        .padding(10)
     }
     
     private var outputTabsView: some View {
@@ -178,7 +188,7 @@ struct MainAreaView: View {
             }
         }
 
-        return DashboardGridView(charts: charts, zoomedChart: $zoomedChart).padding()
+        return DashboardGridView(charts: charts, zoomedChart: $zoomedChart)
     }
     
     struct DashboardGridView: View {
@@ -187,23 +197,28 @@ struct MainAreaView: View {
         @Binding var zoomedChart: String?
         @Namespace private var namespace
         
+        @State private var numberOfColumns: Int = 3
+        
         var body: some View {
             ZStack {
                 if zoomedChart == nil {
                     ScrollView {
-                        let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 3)
+                        let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: numberOfColumns)
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(charts, id: \.tag) { chart in
                                 VStack {
+                                    Spacer()
                                     LaTeX(chart.title)
                                         .font(.headline)
+                                    Spacer()
                                     if let live = chart.liveOutput {
                                         SmallChartView(obs: chart.obs, liveOutput: live)
                                     } else {
                                         Text("No data").foregroundColor(.secondary)
                                     }
                                 }
-                                .clipped()
+                                //.clipped()
+                                .transition(.scale)
                                 .aspectRatio(4 / 3, contentMode: .fill)
                                 .frame(maxWidth: .infinity)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(.thinMaterial).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.2), lineWidth: 1)))
@@ -216,7 +231,7 @@ struct MainAreaView: View {
                                 .opacity(zoomedChart == nil || zoomedChart == chart.tag ? 1 : 0)
                             }
                         }
-                        .padding()
+                        .padding(10)
                     }
                 }
                 
@@ -226,15 +241,15 @@ struct MainAreaView: View {
                             .font(.largeTitle)
                             .padding()
                         chart.fullView
-                            .frame(minWidth: 600, minHeight: 400)
                     }
                     .background(ContainerRelativeShape().fill(.thinMaterial).overlay(ContainerRelativeShape().stroke(Color.primary.opacity(0.2), lineWidth: 1)))
                     .matchedGeometryEffect(id: chart.tag, in: namespace)
                     .transition(.scale.combined(with: .opacity))
                     .zIndex(1)
+                    .padding(10)
                 }
             }
-            .clipShape(ContainerRelativeShape())
+            //.clipShape(ContainerRelativeShape())
             //.padding()
             //.frame(maxWidth: .infinity, maxHeight: .infinity)
             .toolbar {
@@ -245,6 +260,11 @@ struct MainAreaView: View {
                                 zoomedChart = nil
                             }
                         })
+                    }
+                }
+                ToolbarItem(placement: .automatic) {
+                    if zoomedChart == nil {
+                        ZoomToolbar(numberOfColumns: $numberOfColumns)
                     }
                 }
             }
@@ -260,6 +280,31 @@ struct DashboardChart {
     let fullView: AnyView
 }
 
+// Zoom Toolbar
+
+struct ZoomToolbar: View {
+    @Binding var numberOfColumns: Int
+
+    var body: some View {
+        ControlGroup {
+            Button("Zoom Out", systemImage: "minus", action: {
+                withAnimation {
+                    numberOfColumns += 1
+                }
+            })
+            .disabled(numberOfColumns >= 6)
+            .help("Zoom Out")
+            Button("Zoom In", systemImage: "plus", action: {
+                withAnimation {
+                    numberOfColumns -= 1
+                }
+            })
+            .disabled(numberOfColumns <= 3)
+            .help("Zoom In")
+        }.controlGroupStyle(.navigation)
+    }
+}
+
 // Model Management Toolbar
 
 struct ModelManagementToolbar: View {
@@ -271,7 +316,7 @@ struct ModelManagementToolbar: View {
 
     var body: some View {
         ControlGroup {
-            Button("Set", systemImage: "plus") {
+            Button("Set", systemImage: "bookmark.fill") {
                 vm.setReferenceModel()
                 onReferenceSet?()
             }

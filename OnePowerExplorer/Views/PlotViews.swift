@@ -22,13 +22,12 @@ struct SmallChartView: View {
         let maxY = ys.max() ?? 1
 
         Chart {
-            ForEach(points) { pt in
-                AreaMark(
-                    x: .value("x", pt.logX),
-                    yStart: .value("y", minY),
-                    yEnd: .value("y", pt.logY)
-                )
-            }
+            AreaPlot(
+                points,
+                x: .value("x", \.logX),
+                yStart: .value("y", minY),
+                yEnd: .value("y", \.logY)
+            )
             .foregroundStyle(
                 LinearGradient(
                     gradient: Gradient(colors: [
@@ -39,15 +38,16 @@ struct SmallChartView: View {
                     endPoint: .bottom
                 )
             )
-            ForEach(points) { pt in
-                LineMark(
-                    x: .value("x", pt.logX),
-                    y: .value("y", pt.logY)
-                )
-                .lineStyle(StrokeStyle(lineWidth: 3))
-                .foregroundStyle(.blue)
-            }
+            
+            LinePlot(
+                points,
+                x: .value("x", \.logX),
+                y: .value("y", \.logY)
+            )
+            .lineStyle(StrokeStyle(lineWidth: 3))
+            .foregroundStyle(.blue)
         }
+        //.chartYScale(range: .plotDimension(startPadding: 0, endPadding: 1.1*maxY))
         .chartXScale(domain: minX...maxX)
         .chartYScale(domain: minY...maxY)
         .chartXAxis(.hidden)
@@ -171,14 +171,13 @@ struct CombinedPkView: View {
 
                 Chart {
                     ForEach(series, id: \.name) { entry in
-                        ForEach(entry.pts) { pt in
-                            LineMark(
-                                x: .value("k", pt.logX),
-                                y: .value("P(k)", pt.logY)
-                            )
-                            .foregroundStyle(by: .value("Spectrum", entry.name))
-                            .lineStyle(StrokeStyle(lineWidth: 3))
-                        }
+                        LinePlot(
+                            entry.pts,
+                            x: .value("k", \.logX),
+                            y: .value("P(k)", \.logY)
+                        )
+                        .foregroundStyle(by: .value("Spectrum", entry.name.components(separatedBy: "$")[0]))
+                        .lineStyle(StrokeStyle(lineWidth: 3))
                     }
                 }
                 .chartXScale(domain: xDomain)
@@ -327,37 +326,34 @@ struct LogLogChartView: View {
         Chart {
             // --- Reference model ---
             if showReference {
-                ForEach(refPts) { pt in
-                    LineMark(
-                        x: .value("x", pt.logX),
-                        y: .value("y", pt.logY)
-                    )
-                    .foregroundStyle(by: .value("Series", "Reference"))
-                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [8, 4]))
-                }
+                LinePlot(
+                    refPts,
+                    x: .value("x", \.logX),
+                    y: .value("y", \.logY)
+                )
+                .foregroundStyle(by: .value("Series", "Reference"))
+                .lineStyle(StrokeStyle(lineWidth: 2, dash: [8, 4]))
             }
 
             // --- Components ---
             ForEach(componentPts, id: \.key) { entry in
-                ForEach(entry.pts) { pt in
-                    LineMark(
-                        x: .value("x", pt.logX),
-                        y: .value("y", pt.logY)
-                    )
-                    .foregroundStyle(by: .value("Series", entry.key))
-                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [2, 2]))
-                }
+                LinePlot(
+                    entry.pts,
+                    x: .value("x", \.logX),
+                    y: .value("y", \.logY)
+                )
+                .foregroundStyle(by: .value("Series", entry.key))
+                .lineStyle(StrokeStyle(lineWidth: 2, dash: [2, 2]))
             }
 
             // --- Live model (on top) ---
-            ForEach(livePts) { pt in
-                LineMark(
-                    x: .value("x", pt.logX),
-                    y: .value("y", pt.logY)
-                )
-                .foregroundStyle(by: .value("Series", "Live Model"))
-                .lineStyle(StrokeStyle(lineWidth: 3))
-            }
+            LinePlot(
+                livePts,
+                x: .value("x", \.logX),
+                y: .value("y", \.logY)
+            )
+            .foregroundStyle(by: .value("Series", "Live Model"))
+            .lineStyle(StrokeStyle(lineWidth: 3))
         }
         .chartXScale(domain: xDomain)
         .chartYScale(domain: yDomain)
@@ -475,14 +471,13 @@ struct RatioPanelView: View {
                     .foregroundStyle(.red.opacity(0.5))
                     .lineStyle(StrokeStyle(lineWidth: 1))
 
-                ForEach(pts) { pt in
-                    LineMark(
-                        x: .value("x", pt.logX),
-                        y: .value("Δ%", pt.logY)
-                    )
-                    .foregroundStyle(.blue)
-                    .lineStyle(StrokeStyle(lineWidth: 3))
-                }
+                LinePlot(
+                    pts,
+                    x: .value("x", \.logX),
+                    y: .value("Δ%", \.logY)
+                )
+                .foregroundStyle(.blue)
+                .lineStyle(StrokeStyle(lineWidth: 3))
             }
             .chartXScale(domain: xDomain)
             .chartYScale(domain: yDomain)   // ✅ symmetric applied here

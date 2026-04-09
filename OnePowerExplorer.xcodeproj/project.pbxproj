@@ -10,8 +10,8 @@
 		771DD53A2F7E5D9D00A8D668 /* LaTeXSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 771DD5392F7E5D9D00A8D668 /* LaTeXSwiftUI */; };
 		779DE3E52F864446005E1948 /* Menus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779DE3E42F864443005E1948 /* Menus.swift */; };
 		77E499E02F7BDFD700693F62 /* app_packages in Resources */ = {isa = PBXBuildFile; fileRef = 77E499DF2F7BDFD700693F62 /* app_packages */; };
-		77E499E22F7BE07500693F62 /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; };
-		77E499E32F7BE07500693F62 /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		77E499E22F7BE07500693F62 /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; platformFilters = (macos, ); };
+		77E499E32F7BE07500693F62 /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; platformFilters = (macos, ); settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		77F1673F2F754AB8005B3BD3 /* PythonKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA800001 /* PythonKit */; };
 		77F167422F7567C2005B3BD3 /* pk_to_real.py in Resources */ = {isa = PBXBuildFile; fileRef = 77F167412F7567C2005B3BD3 /* pk_to_real.py */; };
 		77F167442F756BD2005B3BD3 /* pyfftlog.py in Resources */ = {isa = PBXBuildFile; fileRef = 77F167432F756BD2005B3BD3 /* pyfftlog.py */; };
