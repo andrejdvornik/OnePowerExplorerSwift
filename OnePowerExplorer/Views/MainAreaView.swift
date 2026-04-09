@@ -198,6 +198,7 @@ struct MainAreaView: View {
         @Namespace private var namespace
         
         @State private var numberOfColumns: Int = 3
+        @GestureState private var pinchScale: CGFloat = 1.0
         
         var body: some View {
             ZStack {
@@ -228,6 +229,21 @@ struct MainAreaView: View {
                                         zoomedChart = chart.tag
                                     }
                                 }
+                                .gesture(
+                                    MagnificationGesture()
+                                    .updating($pinchScale) { value, state, _ in
+                                        state = value
+                                    }
+                                    .onEnded { value in
+                                        withAnimation {
+                                            if value < 0.8 && numberOfColumns < 5 {
+                                                numberOfColumns += 1
+                                            } else if value > 1.2 && numberOfColumns > 1 {
+                                                numberOfColumns -= 1
+                                            }
+                                        }
+                                    }
+                                )
                                 .opacity(zoomedChart == nil || zoomedChart == chart.tag ? 1 : 0)
                             }
                         }
@@ -247,6 +263,11 @@ struct MainAreaView: View {
                     .transition(.scale.combined(with: .opacity))
                     .zIndex(1)
                     .padding(10)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            zoomedChart = nil
+                        }
+                    }
                 }
             }
             //.clipShape(ContainerRelativeShape())
@@ -299,7 +320,7 @@ struct ZoomToolbar: View {
                     numberOfColumns -= 1
                 }
             })
-            .disabled(numberOfColumns <= 3)
+            .disabled(numberOfColumns <= 1)
             .help("Zoom In")
         }.controlGroupStyle(.navigation)
     }
