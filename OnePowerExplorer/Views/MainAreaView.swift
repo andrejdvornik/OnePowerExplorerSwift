@@ -148,6 +148,11 @@ struct MainAreaView: View {
                     fullView: fullView
                 ))
             }
+            if let zoomed = zoomedChart, !charts.contains(where: { $0.tag == zoomed }) {
+                DispatchQueue.main.async {
+                    zoomedChart = "combined_pk"
+                }
+            }
         } else {
             for obs in allObs {
                 let fullView = AnyView(SingleObservableView(vm: vm, obs: obs))
@@ -158,6 +163,18 @@ struct MainAreaView: View {
                     liveOutput: vm.computedOutputs[obs.pythonSubtype],
                     fullView: fullView
                 ))
+            }
+            if zoomedChart == "combined_pk" {
+                if let firstPk = pkObs.first {
+                    DispatchQueue.main.async {
+                        zoomedChart = firstPk.id
+                    }
+                } else {
+                    // fallback: just clear zoom
+                    DispatchQueue.main.async {
+                        zoomedChart = nil
+                    }
+                }
             }
         }
 
@@ -174,7 +191,7 @@ struct MainAreaView: View {
             ZStack {
                 if zoomedChart == nil {
                     ScrollView {
-                        let columns = [GridItem(.adaptive(minimum: 220), spacing: 16)]
+                        let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 3)
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(charts, id: \.tag) { chart in
                                 VStack {
@@ -186,8 +203,9 @@ struct MainAreaView: View {
                                         Text("No data").foregroundColor(.secondary)
                                     }
                                 }
-                                .frame(minWidth: 220, minHeight: 165)
+                                .clipped()
                                 .aspectRatio(4 / 3, contentMode: .fill)
+                                .frame(maxWidth: .infinity)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(.thinMaterial).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.2), lineWidth: 1)))
                                 .matchedGeometryEffect(id: chart.tag, in: namespace)
                                 .onTapGesture {
@@ -195,7 +213,7 @@ struct MainAreaView: View {
                                         zoomedChart = chart.tag
                                     }
                                 }
-                                .opacity(zoomedChart == nil ? 1 : 0)
+                                .opacity(zoomedChart == nil || zoomedChart == chart.tag ? 1 : 0)
                             }
                         }
                         .padding()
