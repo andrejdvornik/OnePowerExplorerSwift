@@ -5,7 +5,7 @@ struct MainAreaView: View {
     @ObservedObject var vm: ExplorerViewModel
     @State private var selectedTab: String = ""
     @State private var zoomedChart: String? = nil
-
+    
     var body: some View {
         // State-dependent content
         switch vm.computeState {
@@ -37,9 +37,9 @@ struct MainAreaView: View {
             }
         }
     }
-
+    
     // State views
-
+    
     private var idleView: some View {
         ContentUnavailableView(
             "No results yet",
@@ -50,7 +50,7 @@ struct MainAreaView: View {
         .clipShape(ContainerRelativeShape())
         .padding(10)
     }
-
+    
     private func computingView(message: String) -> some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -64,7 +64,7 @@ struct MainAreaView: View {
         .clipShape(ContainerRelativeShape())
         .padding(10)
     }
-
+    
     private func errorView(message: String) -> some View {
         ContentUnavailableView(
             "Computation Failed",
@@ -75,7 +75,7 @@ struct MainAreaView: View {
         .clipShape(ContainerRelativeShape())
         .padding(10)
     }
-
+    
     private var emptySelectionView: some View {
         ContentUnavailableView(
             "No observable selected",
@@ -90,11 +90,11 @@ struct MainAreaView: View {
     private var outputTabsView: some View {
         let selected = vm.uiState.selectedOutputs
         let allObs = ObservableOutput.allCases.filter { selected.contains($0) }
-
+        
         let pkObs = allObs.filter { $0.category == "pk" && $0 != .gb }
         let otherObs = allObs.filter { $0.category != "pk" || $0 == .gb }
         let combinePk = vm.uiState.combinePk && !pkObs.isEmpty
-
+        
         let tabs: [(tag: String, view: AnyView, title: String)] = {
             if combinePk {
                 return [
@@ -114,12 +114,12 @@ struct MainAreaView: View {
                 }
             }
         }()
-
+        
         return TabView(selection: $selectedTab) {
             ForEach(tabs, id: \.tag) { tab in
                 tab.view
-                .tabItem { Text(tab.title) }
-                .tag(tab.tag)
+                    .tabItem { Text(tab.title) }
+                    .tag(tab.tag)
             }
         }
         .onChange(of: tabs.map(\.tag)) { _, newTabs in
@@ -133,11 +133,11 @@ struct MainAreaView: View {
     
     private var outputDashboardView: some View {
         let allObs = ObservableOutput.allCases
-
+        
         let pkObs = allObs.filter { $0.category == "pk" && $0 != .gb }
         let otherObs = allObs.filter { $0.category != "pk" || $0 == .gb }
         let combinePk = vm.uiState.combinePk && !pkObs.isEmpty
-
+        
         var charts: [DashboardChart] = []
         if combinePk {
             let combinedView = AnyView(CombinedPkView(vm: vm, pkObs: pkObs))
@@ -187,8 +187,8 @@ struct MainAreaView: View {
                 }
             }
         }
-
-        return DashboardGridView(charts: charts, zoomedChart: $zoomedChart)
+        
+        return DashboardGridView(charts: charts, zoomedChart: $zoomedChart, uiState: vm.uiState)
     }
     
     struct DashboardGridView: View {
@@ -197,33 +197,34 @@ struct MainAreaView: View {
         @Binding var zoomedChart: String?
         @Namespace private var namespace
         
-        @State private var numberOfColumns: Int = 3
+        @ObservedObject var uiState: AppUIState
         @GestureState private var pinchScale: CGFloat = 1.0
         
         var body: some View {
             ZStack {
                 if zoomedChart == nil {
                     ScrollView {
-                        let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: numberOfColumns)
+                        let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: uiState.numberOfColumns)
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(charts, id: \.tag) { chart in
                                 VStack {
-                                    Spacer()
                                     LaTeX(chart.title)
                                         .font(.headline)
-                                    Spacer()
+                                        .padding(.top, 20)
                                     if let live = chart.liveOutput {
                                         SmallChartView(obs: chart.obs, liveOutput: live)
+                                            .padding(.top, 10)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
                                     } else {
                                         Text("No data").foregroundColor(.secondary)
+                                            .padding(.vertical, 10)
                                     }
                                 }
-                                //.clipped()
-                                .transition(.scale)
+                                .transition(.scale.combined(with: .opacity))
                                 .aspectRatio(4 / 3, contentMode: .fill)
                                 .frame(maxWidth: .infinity)
                                 .background(RoundedRectangle(cornerRadius: 10).fill(.thinMaterial).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.2), lineWidth: 1)))
-                                .matchedGeometryEffect(id: chart.tag, in: namespace)
+                                .matchedGeometryEffect(id: chart.tag, in: namespace, isSource: zoomedChart == nil)
                                 .onTapGesture {
                                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                         zoomedChart = chart.tag
@@ -231,22 +232,23 @@ struct MainAreaView: View {
                                 }
                                 .gesture(
                                     MagnificationGesture()
-                                    .updating($pinchScale) { value, state, _ in
-                                        state = value
-                                    }
-                                    .onEnded { value in
-                                        withAnimation {
-                                            if value < 0.8 && numberOfColumns < 5 {
-                                                numberOfColumns += 1
-                                            } else if value > 1.2 && numberOfColumns > 1 {
-                                                numberOfColumns -= 1
+                                        .updating($pinchScale) { value, state, _ in
+                                            state = value
+                                        }
+                                        .onEnded { value in
+                                            withAnimation {
+                                                if value < 0.8 && uiState.numberOfColumns < 5 {
+                                                    uiState.numberOfColumns += 1
+                                                } else if value > 1.2 && uiState.numberOfColumns > 1 {
+                                                    uiState.numberOfColumns -= 1
+                                                }
                                             }
                                         }
-                                    }
                                 )
                                 .opacity(zoomedChart == nil || zoomedChart == chart.tag ? 1 : 0)
                             }
                         }
+                        .animation(.spring(response: 0.6, dampingFraction: 0.85), value: uiState.numberOfColumns)
                         .padding(10)
                     }
                 }
@@ -259,7 +261,7 @@ struct MainAreaView: View {
                         chart.fullView
                     }
                     .background(ContainerRelativeShape().fill(.thinMaterial).overlay(ContainerRelativeShape().stroke(Color.primary.opacity(0.2), lineWidth: 1)))
-                    .matchedGeometryEffect(id: chart.tag, in: namespace)
+                    .matchedGeometryEffect(id: chart.tag, in: namespace, isSource: zoomedChart != nil)
                     .transition(.scale.combined(with: .opacity))
                     .zIndex(1)
                     .padding(10)
@@ -274,7 +276,7 @@ struct MainAreaView: View {
             //.padding()
             //.frame(maxWidth: .infinity, maxHeight: .infinity)
             .toolbar {
-                ToolbarItem(placement: .navigation) {
+                ToolbarItem(id: "Back", placement: .navigation) {
                     if zoomedChart != nil {
                         Button("Back", systemImage: "chevron.left", action: {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
@@ -283,15 +285,16 @@ struct MainAreaView: View {
                         })
                     }
                 }
-                ToolbarItem(placement: .automatic) {
+                ToolbarItem(id: "Zoom", placement: .automatic) {
                     if zoomedChart == nil {
-                        ZoomToolbar(numberOfColumns: $numberOfColumns)
+                        ZoomToolbar(numberOfColumns: $uiState.numberOfColumns)
                     }
                 }
             }
         }
     }
 }
+
 
 struct DashboardChart {
     let tag: String

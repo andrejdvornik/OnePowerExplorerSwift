@@ -1,16 +1,17 @@
 import SwiftUI
+import LaTeXSwiftUI
 
 @main
 struct OnePowerExplorerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                #if os(macOS)
                 .frame(minWidth: 1200, minHeight: 600)
                 .onAppear {
-                    #if os(macOS)
                     NSWindow.allowsAutomaticWindowTabbing = false
-                    #endif
                 }
+                #endif
         }
         #if os(macOS)
         .windowStyle(.hiddenTitleBar)

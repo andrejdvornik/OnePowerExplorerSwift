@@ -1,6 +1,7 @@
 import SwiftUI
 import Charts
 import LaTeXSwiftUI
+import UniformTypeIdentifiers
 
 struct SmallChartView: View {
     let obs: ObservableOutput
@@ -21,6 +22,12 @@ struct SmallChartView: View {
         let minY = ys.min() ?? 0
         let maxY = ys.max() ?? 1
 
+        let yRange = max(maxY - minY, 1e-6)
+        let padding = yRange * 0.05
+
+        let paddedMinY = minY
+        let paddedMaxY = maxY + padding
+        
         Chart {
             AreaPlot(
                 points,
@@ -47,9 +54,8 @@ struct SmallChartView: View {
             .lineStyle(StrokeStyle(lineWidth: 3))
             .foregroundStyle(.blue)
         }
-        //.chartYScale(range: .plotDimension(startPadding: 0, endPadding: 1.1*maxY))
         .chartXScale(domain: minX...maxX)
-        .chartYScale(domain: minY...maxY)
+        .chartYScale(domain: paddedMinY...paddedMaxY)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartPlotStyle { plotArea in
@@ -121,6 +127,9 @@ struct SingleObservableView: View {
             } else {
                 ContentUnavailableView("No data for selected observable",
                                        systemImage: "questionmark.circle",)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipShape(ContainerRelativeShape())
+                .padding(10)
             }
             if vm.computedOutputs[subtype] != nil {
                 CSVExportButton(vm: vm, subtype: subtype)
@@ -266,8 +275,10 @@ struct CombinedPkView: View {
         }
     }
 
-    private func safeRange(_ values: [Double]) -> ClosedRange<Double> {
-        guard let min = values.min(), let max = values.max() else {
+    private func safeRange(_ values: [Double], padding: Double = 0.05) -> ClosedRange<Double> {
+        guard let min = values.min(),
+              let max = values.max(),
+              min.isFinite, max.isFinite else {
             return 0...1
         }
 
@@ -275,7 +286,10 @@ struct CombinedPkView: View {
             return (min - 1)...(max + 1)
         }
 
-        return min...max
+        let range = max - min
+        let pad = range * padding
+
+        return (min - pad)...(max + pad)
     }
 }
 
@@ -315,7 +329,8 @@ struct LogLogChartView: View {
         }()
 
         // --- Combine ALL points for domain ---
-        let allPts = livePts + componentPts.flatMap { $0.pts } + refPts
+        //let allPts = livePts + componentPts.flatMap { $0.pts } + refPts
+        let allPts = livePts + refPts
 
         let xs = allPts.map { $0.logX }
         let ys = allPts.map { $0.logY }
@@ -408,8 +423,10 @@ struct LogLogChartView: View {
         liveOutput.y.keys.filter { $0 != "tot" }.sorted()
     }
 
-    private func safeRange(_ values: [Double]) -> ClosedRange<Double> {
-        guard let min = values.min(), let max = values.max() else {
+    private func safeRange(_ values: [Double], padding: Double = 0.05) -> ClosedRange<Double> {
+        guard let min = values.min(),
+              let max = values.max(),
+              min.isFinite, max.isFinite else {
             return 0...1
         }
 
@@ -417,7 +434,10 @@ struct LogLogChartView: View {
             return (min - 1)...(max + 1)
         }
 
-        return min...max
+        let range = max - min
+        let pad = range * padding
+
+        return (min - pad)...(max + pad)
     }
 
     private func makePoints(_ xs: [Double], _ ys: [Double]) -> [ChartPoint] {
@@ -459,7 +479,7 @@ struct RatioPanelView: View {
         let ys = pts.map { $0.logY }
 
         let xDomain = safeRange(xs)
-        let yDomain = symmetricYRange(ys, maxLimit: 100) // ✅ symmetric ±100%
+        let yDomain = symmetricYRange(ys, maxLimit: 100)
 
         VStack(alignment: .leading, spacing: 4) {
             Text("Relative difference vs. reference [%]")
@@ -480,7 +500,7 @@ struct RatioPanelView: View {
                 .lineStyle(StrokeStyle(lineWidth: 3))
             }
             .chartXScale(domain: xDomain)
-            .chartYScale(domain: yDomain)   // ✅ symmetric applied here
+            .chartYScale(domain: yDomain)
             .clipped()
             .frame(height: 150)
 
@@ -576,8 +596,10 @@ struct RatioPanelView: View {
         ]
     }
 
-    private func safeRange(_ values: [Double]) -> ClosedRange<Double> {
-        guard let min = values.min(), let max = values.max() else {
+    private func safeRange(_ values: [Double], padding: Double = 0.05) -> ClosedRange<Double> {
+        guard let min = values.min(),
+              let max = values.max(),
+              min.isFinite, max.isFinite else {
             return 0...1
         }
 
@@ -585,7 +607,10 @@ struct RatioPanelView: View {
             return (min - 1)...(max + 1)
         }
 
-        return min...max
+        let range = max - min
+        let pad = range * padding
+
+        return (min - pad)...(max + pad)
     }
 
     private func interpolate(x: Double, xs: [Double], ys: [Double]) -> Double? {
@@ -612,33 +637,58 @@ struct RatioPanelView: View {
 struct CSVExportButton: View {
     @ObservedObject var vm: ExplorerViewModel
     let subtype: String
-    @State private var showPanel = false
+    
+    @State private var showExporter = false
+    @State private var document: CSVDocument?
 
     var body: some View {
         Button {
-            exportCSV()
+            prepareExport()
         } label: {
             Label("Export CSV", systemImage: "square.and.arrow.down")
         }
+        .fileExporter(
+            isPresented: $showExporter,
+            document: document,
+            contentType: .commaSeparatedText,
+            defaultFilename: "\(subtype)"
+        ) { result in
+            switch result {
+            case .success:
+                break
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
     }
 
-    private func exportCSV() {
+    private func prepareExport() {
         guard let data = vm.csvData(for: subtype) else {
             // Show error alert
             return
         }
-        #if os(macOS)
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = "\(subtype).csv"
-        panel.allowedContentTypes = [.commaSeparatedText]
-        if panel.runModal() == .OK, let url = panel.url {
-            do {
-                try data.write(to: url)
-            } catch {
-                // Show error alert
-            }
-        }
-        #endif
+        
+        document = CSVDocument(data: data)
+        showExporter = true
+    }
+}
+
+
+struct CSVDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.commaSeparatedText] }
+    
+    var data: Data
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        self.data = configuration.file.regularFileContents ?? Data()
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        return .init(regularFileWithContents: data)
     }
 }
 

@@ -221,7 +221,7 @@ final class AppParameters: ObservableObject, @unchecked Sendable {
     @Published var h: Double = 0.7
     @Published var ns: Double = 0.9
     @Published var sigma_8: Double = 0.8
-    @Published var z_vec: Double = 0.0
+    @Published var z_vec: Double = 0.2
     @Published var m_nu: Double = 0.06
     @Published var w0: Double = -1.0
     @Published var wa: Double = 0.0
@@ -338,7 +338,7 @@ extension AppParameters {
         h = 0.7
         ns = 0.9
         sigma_8 = 0.8
-        z_vec = 0.0
+        z_vec = 0.2
         m_nu = 0.06
         w0 = -1.0
         wa = 0.0
@@ -372,8 +372,6 @@ extension AppParameters {
         obs_max = 12.0
         hodParams = HODParams()
 
-        // Outputs
-        allOutputs = [.pmm, .pgm, .pgg, .pii, .pgi, .pmi, .gb, .hmf, .biasFn, .concMatter, .concGal, .smf, .hod, .ds, .wp, .wtheta, .gamma, .xip, .xim]
     }
 }
 
@@ -383,4 +381,5 @@ final class AppUIState: ObservableObject {
     @Published var showComponents: Bool = false
     @Published var compareReference: Bool = false
     @Published var combinePk: Bool = false
+    @Published var numberOfColumns: Int = 3
 }

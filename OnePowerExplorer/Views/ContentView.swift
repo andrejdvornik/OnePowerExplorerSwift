@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    
     @StateObject private var vm = ExplorerViewModel()
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
     @State private var showReferenceSet = false
@@ -12,39 +13,42 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 280, ideal: 300, max: 450)
         } detail: {
             MainAreaView(vm: vm)
+                #if os(iOS)
+                .toolbar {
+                    ToolbarItem(placement: .automatic) {
+                        ModelManagementToolbar(
+                            vm: vm,
+                            onReferenceSet: {
+                                showReferenceSet = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    showReferenceSet = false
+                                }
+                            },
+                            onReferenceCleared: {
+                                showReferenceCleared = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    showReferenceCleared = false
+                                }
+                            })
+                    }
+                    
+                    ToolbarItem(placement: .principal) {
+                        StatusToolbar(vm: vm, showReferenceSet: $showReferenceSet, showReferenceCleared: $showReferenceCleared)
+                    }
+                    
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Reset", systemImage: "arrow.uturn.backward") {
+                            vm.params.resetParameters()
+                        }
+                        .help("Reset all parameters to their default values")
+                    }
+                }
+                //.toolbarRole(.editor)
+                #endif
         }
         .focusedObject(vm)
+        #if os(macOS)
         .toolbar(id: "OnePower", content: {
-            // Use platform-appropriate toolbar placement: `topBarLeading` is iOS-only
-            #if os(iOS)
-            ToolbarItem(id: "Model", placement: .topBarLeading) {
-                ModelManagementToolbar(
-                    vm: vm,
-                    onReferenceSet: {
-                        showReferenceSet = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            showReferenceSet = false
-                        }
-                    },
-                    onReferenceCleared: {
-                        showReferenceCleared = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            showReferenceCleared = false
-                        }
-                    })
-            }.defaultCustomization(options: .alwaysAvailable)
-            
-            ToolbarItem(id: "Status", placement: .principal) {
-                StatusToolbar(vm: vm, showReferenceSet: $showReferenceSet, showReferenceCleared: $showReferenceCleared)
-            }.defaultCustomization(options: .alwaysAvailable)
-            
-            ToolbarItem(id: "Reset", placement: .topBarTrailing) {
-                Button("Reset", systemImage: "arrow.uturn.backward") {
-                    vm.params.resetParameters()
-                }
-                .help("Reset all parameters to their default values")
-            }.defaultCustomization(options: .alwaysAvailable)
-            #else
             ToolbarItem(id: "Model", placement: .automatic) {
                 ModelManagementToolbar(
                     vm: vm,
@@ -72,10 +76,10 @@ struct ContentView: View {
                 }
                 .help("Reset all parameters to their default values")
             }.defaultCustomization(options: .alwaysAvailable)
-            #endif
         })
         .toolbarRole(.editor)
         .frame(minWidth: 1200, minHeight: 600)
+        #endif
         .onAppear {
             Task {
                 await PythonBridge.shared.setup()

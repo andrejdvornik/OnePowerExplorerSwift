@@ -8,29 +8,6 @@ struct SidebarView: View {
 
     var body: some View {
         List {
-                // Header logo / title
-                /*
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("OnePower Explorer")
-                        .font(.title2).bold()
-                    Text("Halo Model & Predictions")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                .padding(.top, 8)
-                */
-                //Divider()
-
-                // Run button
-                /*
-                Button(action: { vm.runModel() }) {
-                    Label("Run Model", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(params.selectedOutputs.isEmpty)
-                */
-                // UI toggles
             Section {
                 Toggle("Compare to reference model", isOn: $uiState.compareReference).toggleStyle(.switch)
                 Toggle("Show halo model components", isOn: $uiState.showComponents).toggleStyle(.switch)
@@ -51,8 +28,6 @@ struct SidebarView: View {
 
             // HOD parameters
             HODParamsView(params: params)
-
-            Divider()
 
             // Links
             Link("OnePower on PyPI",
@@ -90,7 +65,7 @@ struct ObservableSelectionView: View {
                         }
                         uiState.selectedOutputs = newSet
                     }
-                )) { LaTeX(obs.rawValue).imageRenderingMode(.template).foregroundColor(.primary).fixedSize().preload() }
+                )) { LaTeX(obs.rawValue).foregroundColor(.primary) }
                     .toggleStyle(.switch)
             }
         }, header: { Text("Observables") })
@@ -288,14 +263,9 @@ struct LabeledNumberField: View {
     var body: some View {
         HStack {
             LaTeX(label)
-                .imageRenderingMode(.template)
-                .foregroundColor(.primary)
                 //.frame(width: 120, alignment: .leading)
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .fixedSize()
-                .errorMode(.error)
-                .preload()
             Spacer()
             TextField("", value: $value, formatter: formatter)
                 .textFieldStyle(.roundedBorder)
@@ -345,14 +315,9 @@ struct LabeledSliderField: View {
     var body: some View {
         HStack {
             LaTeX(label)
-                .imageRenderingMode(.template)
-                .foregroundColor(.primary)
                 //.frame(width: 120, alignment: .leading)
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .fixedSize()
-                .errorMode(.error)
-                .preload()
             Spacer()
             Slider(value: $normalizedValue)
                 .controlSize(.small)
@@ -411,12 +376,7 @@ struct LabeledIntField: View {
     var body: some View {
         HStack {
             LaTeX(label)
-                .imageRenderingMode(.template)
-                .foregroundColor(.primary)
                 //.frame(width: 120, alignment: .leading)
-                .fixedSize()
-                .errorMode(.error)
-                .preload()
             Spacer()
             TextField("", value: $value, formatter: formatter)
                 .textFieldStyle(.roundedBorder)
@@ -447,14 +407,9 @@ struct EnumPicker<T: RawRepresentable & CaseIterable & Hashable>: View
     var body: some View {
         HStack {
             LaTeX(label)
-                .imageRenderingMode(.template)
-                .foregroundColor(.primary)
                 //.frame(minWidth: 120, alignment: .leading)
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .fixedSize()
-                .errorMode(.error)
-                .preload()
             Spacer()
             Picker("", selection: $selection) {
                 ForEach(Array(T.allCases), id: \.self) { val in

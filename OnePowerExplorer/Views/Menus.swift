@@ -1,10 +1,3 @@
-//
-//  Menus.swift
-//  OnePowerExplorer
-//
-//  Created by Andrej Dvornik on 08.04.26.
-//
-
 import SwiftUI
 
 struct Menus: Commands {

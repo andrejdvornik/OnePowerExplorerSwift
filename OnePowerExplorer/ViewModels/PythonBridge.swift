@@ -80,7 +80,7 @@ actor PythonBridge {
 
             self.isInitialised = true
             _ = sys
-
+            
         } catch {
             self.initError = ComputeError.pythonUnavailable
         }
