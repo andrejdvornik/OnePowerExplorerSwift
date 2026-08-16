@@ -1,4 +1,5 @@
 import SwiftUI
+//import iosMath
 import LaTeXSwiftUI
 
 @main

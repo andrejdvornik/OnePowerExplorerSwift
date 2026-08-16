@@ -31,9 +31,15 @@ struct ContentView: View {
                                 }
                             })
                     }
+                    if #available(iOS 26.0, *) {
+                        ToolbarSpacer(.flexible)
+                    }
                     
                     ToolbarItem(placement: .principal) {
                         StatusToolbar(vm: vm, showReferenceSet: $showReferenceSet, showReferenceCleared: $showReferenceCleared)
+                    }
+                    if #available(iOS 26.0, *) {
+                        ToolbarSpacer(.flexible)
                     }
                     
                     ToolbarItem(placement: .navigationBarTrailing) {
@@ -42,6 +48,9 @@ struct ContentView: View {
                         }
                         .help("Reset all parameters to their default values")
                     }
+                    if #available(iOS 26.0, *) {
+                        ToolbarSpacer(.flexible)
+                    }
                 }
                 //.toolbarRole(.editor)
                 #endif
@@ -49,6 +58,10 @@ struct ContentView: View {
         .focusedObject(vm)
         #if os(macOS)
         .toolbar(id: "OnePower", content: {
+            ToolbarItem(id: "Status", placement: .principal) {
+                StatusToolbar(vm: vm, showReferenceSet: $showReferenceSet, showReferenceCleared: $showReferenceCleared)
+            }.defaultCustomization(options: .alwaysAvailable)
+            
             ToolbarItem(id: "Model", placement: .automatic) {
                 ModelManagementToolbar(
                     vm: vm,
@@ -64,10 +77,6 @@ struct ContentView: View {
                             showReferenceCleared = false
                         }
                     })
-            }.defaultCustomization(options: .alwaysAvailable)
-            
-            ToolbarItem(id: "Status", placement: .principal) {
-                StatusToolbar(vm: vm, showReferenceSet: $showReferenceSet, showReferenceCleared: $showReferenceCleared)
             }.defaultCustomization(options: .alwaysAvailable)
             
             ToolbarItem(id: "Reset", placement: .automatic) {

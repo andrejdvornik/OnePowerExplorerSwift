@@ -285,11 +285,22 @@ struct MainAreaView: View {
                         })
                     }
                 }
+                #if os(iOS)
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.flexible)
+                }
+                #endif
+                
                 ToolbarItem(id: "Zoom", placement: .automatic) {
                     if zoomedChart == nil {
                         ZoomToolbar(numberOfColumns: $uiState.numberOfColumns)
                     }
                 }
+                #if os(iOS)
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.flexible)
+                }
+                #endif
             }
         }
     }
@@ -311,20 +322,22 @@ struct ZoomToolbar: View {
 
     var body: some View {
         ControlGroup {
-            Button("Zoom Out", systemImage: "minus", action: {
+            Button("Zoom Out", systemImage: "minus") {
                 withAnimation {
                     numberOfColumns += 1
                 }
-            })
+            }
             .disabled(numberOfColumns >= 6)
             .help("Zoom Out")
-            Button("Zoom In", systemImage: "plus", action: {
+            Button("Zoom In", systemImage: "plus") {
                 withAnimation {
                     numberOfColumns -= 1
                 }
-            })
+            }
             .disabled(numberOfColumns <= 1)
             .help("Zoom In")
+        } label: {
+            Label("Zoom", systemImage: "magnifyingglass")
         }.controlGroupStyle(.navigation)
     }
 }
@@ -352,6 +365,8 @@ struct ModelManagementToolbar: View {
             }
             .disabled(vm.referenceModel == nil)
             .help("Clear the reference model")
+        } label: {
+            Label("Reference", systemImage: "bookmark")
         }.controlGroupStyle(.navigation)
     }
 }

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		771DD53A2F7E5D9D00A8D668 /* LaTeXSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 771DD5392F7E5D9D00A8D668 /* LaTeXSwiftUI */; };
 		779DE3E52F864446005E1948 /* Menus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779DE3E42F864443005E1948 /* Menus.swift */; };
+		77D45B452F8F8359009ED778 /* iosMath in Frameworks */ = {isa = PBXBuildFile; productRef = 77D45B442F8F8359009ED778 /* iosMath */; };
 		77E499E02F7BDFD700693F62 /* app_packages in Resources */ = {isa = PBXBuildFile; fileRef = 77E499DF2F7BDFD700693F62 /* app_packages */; };
 		77E499E22F7BE07500693F62 /* Python.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; platformFilters = (macos, ); };
 		77E499E32F7BE07500693F62 /* Python.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 77E499E12F7BDFE100693F62 /* Python.xcframework */; platformFilters = (macos, ); settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -65,6 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				77D45B452F8F8359009ED778 /* iosMath in Frameworks */,
 				77F1673F2F754AB8005B3BD3 /* PythonKit in Frameworks */,
 				77E499E22F7BE07500693F62 /* Python.xcframework in Frameworks */,
 				771DD53A2F7E5D9D00A8D668 /* LaTeXSwiftUI in Frameworks */,
@@ -78,8 +80,8 @@
 			isa = PBXGroup;
 			children = (
 				77E499DF2F7BDFD700693F62 /* app_packages */,
-				77F167412F7567C2005B3BD3 /* pk_to_real.py */,
 				77F167432F756BD2005B3BD3 /* pyfftlog.py */,
+				77F167412F7567C2005B3BD3 /* pk_to_real.py */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -173,6 +175,7 @@
 			packageProductDependencies = (
 				AA800001 /* PythonKit */,
 				771DD5392F7E5D9D00A8D668 /* LaTeXSwiftUI */,
+				77D45B442F8F8359009ED778 /* iosMath */,
 			);
 			productName = OnePowerExplorer;
 			productReference = AA200001 /* OnePowerExplorer.app */;
@@ -205,6 +208,7 @@
 			packageReferences = (
 				AA800002 /* XCRemoteSwiftPackageReference "PythonKit" */,
 				771DD5382F7E5D9D00A8D668 /* XCRemoteSwiftPackageReference "LaTeXSwiftUI" */,
+				77D45B432F8F8359009ED778 /* XCRemoteSwiftPackageReference "iosMath" */,
 			);
 			productRefGroup = AA400010 /* Products */;
 			projectDirPath = "";
@@ -265,6 +269,7 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_DEPENDENCY_SCANNING = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -331,6 +336,7 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_DEPENDENCY_SCANNING = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -519,6 +525,14 @@
 				kind = branch;
 			};
 		};
+		77D45B432F8F8359009ED778 /* XCRemoteSwiftPackageReference "iosMath" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kostub/iosMath";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 		AA800002 /* XCRemoteSwiftPackageReference "PythonKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pvieito/PythonKit.git";
@@ -539,6 +553,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = AA800002 /* XCRemoteSwiftPackageReference "PythonKit" */;
 			productName = PythonKit;
+		};
+		77D45B442F8F8359009ED778 /* iosMath */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 77D45B432F8F8359009ED778 /* XCRemoteSwiftPackageReference "iosMath" */;
+			productName = iosMath;
 		};
 		AA800001 /* PythonKit */ = {
 			isa = XCSwiftPackageProductDependency;
